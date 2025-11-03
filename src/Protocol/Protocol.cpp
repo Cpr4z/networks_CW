@@ -1,6 +1,6 @@
 #include "Protocol.hpp"
 
-static std::vector<uint8_t> encode(const nlohmann::json& msg) {
+std::vector<uint8_t> Protocol::encode(const nlohmann::json& msg) {
     std::string json = msg.dump();
     uint32_t len = htonl(static_cast<uint32_t>(json.size()));
     std::vector<uint8_t> buf(sizeof(len) + json.size());

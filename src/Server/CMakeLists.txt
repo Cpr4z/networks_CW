@@ -7,7 +7,8 @@ set(HEADERS
         Server.hpp
         AcceptAwaiter.hpp
         Reactor.hpp
-        Task.hpp)
+        Task.hpp
+        Operations.hpp)
 
 set(SOURCES
         Server.cpp

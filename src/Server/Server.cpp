@@ -18,7 +18,35 @@ NoteServer::NoteServer(int port, const std::string& host)
 }
 
 void processMessage(const nlohmann::json& msg, int server_fd) {
-
+    try {
+        std::string type = msg.at("type").get<std::string>();
+        if (type == "insert") {
+            handleInsert(msg, client_fd);
+        }
+        else if (type == "delete") {
+            handleDelete(msg, client_fd);
+        }
+        else if (type == "update") {
+            handleUpdate(msg, client_fd);
+        }
+        else if (type == "cursor_move") {
+            handleCursorMove(msg, client_fd);
+        }
+        else if (type == "sync_request") {
+            handleSyncRequest(msg, client_fd);
+        }
+        else if (type == "user_join") {
+            handleUserJoin(msg, client_fd);
+        }
+        else if (type == "user_leave") {
+            handleUserLeave(msg, client_fd);
+        }
+        else {
+            std::cerr << "[WARN] Unknown message type: " << type << std::endl;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[ERROR] processMessage failed: " << e.what() << std::endl;
+    }
 }
 
 
