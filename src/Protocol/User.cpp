@@ -1,6 +1,6 @@
 #include "User.hpp"
 
-User::User(const std::string& user_name, size_t user_id, size_t doc_id) : m_user_data({user_id, user_name}), m_doc_id(doc_id){
+User::User(Id user_id, const std::string& login, const std::string& password) : m_user_data({user_id, login, password}){
 }
 
 void User::updateCursorPos(size_t doc_id) {

@@ -2,16 +2,34 @@ cmake_minimum_required(VERSION 3.29)
 project(client)
 
 set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOUIC ON)
+
+find_package(Qt6 REQUIRED COMPONENTS Quick Qml Network)
 
 set(HEADERS
-    Client.hpp)
+    src/Client.hpp)
 
 set(SOURCES
-    Client.cpp)
+    src/Client.cpp)
 
-add_executable(${PROJECT_NAME} ${HEADERS} ${SOURCES} main_client.cpp)
+set(QT
+    qml.qrc
+    src/ClientWindow.hpp
+    src/ClientWindow.cpp
+    src/AuthManager.hpp
+    src/AuthManager.cpp
+    )
 
-target_link_libraries(${PROJECT_NAME} protocol)
+add_executable(${PROJECT_NAME} ${HEADERS} ${SOURCES} ${QT} main_client.cpp)
+
+target_link_libraries(${PROJECT_NAME} PRIVATE
+        Qt6::Quick
+        Qt6::Qml
+        Qt6::Gui
+        Qt6::Network
+        protocol)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
         ${CMAKE_SOURCE_DIR}/Protocol

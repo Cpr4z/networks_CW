@@ -6,15 +6,28 @@ set(CMAKE_CXX_STANDARD 23)
 set(HEADERS
         Server.hpp
         AcceptAwaiter.hpp
+        ReadAwaiter.hpp
+        WriteAwaiter.hpp
         Reactor.hpp
         Task.hpp
-        Operations.hpp)
+        SyncServer.hpp
+#        User.hpp
+#        Document.hpp
+        Repository.hpp
+        )
 
 set(SOURCES
         Server.cpp
         AcceptAwaiter.cpp
+        ReadAwaiter.cpp
+        WriteAwaiter.cpp
         Reactor.cpp
-        Task.cpp)
+        Task.cpp
+        SyncServer.cpp
+#        Document.cpp
+#        User.cpp
+        Repository.cpp
+)
 
 add_executable(${PROJECT_NAME} ${HEADERS} ${SOURCES} main_server.cpp)
 

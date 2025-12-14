@@ -1,4 +1,6 @@
 add_library(protocol STATIC
+        Operation.hpp
+        Requests.hpp
         Document.cpp
         User.cpp
         Protocol.cpp

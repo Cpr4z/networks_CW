@@ -8,16 +8,18 @@
 struct UserData {
     Id user_id;
     std::string user_name;
+    std::string password;
 };
 
 class User {
 public:
-    explicit User(const std::string& user_name, Id user_id, Id doc_id = 0);
+    explicit User(Id user_id, const std::string& login, const std::string& password);
 
     [[nodiscard]] Id getCursorPosition() const { return m_cursor_pos; }
     [[nodiscard]] Id getDocId() const { return m_doc_id; }
     [[nodiscard]] Id getId() const { return m_user_data.user_id; }
-    [[nodiscard]] std::string getName() const { return m_user_data.user_name; }
+    [[nodiscard]] std::string getUserName() const { return m_user_data.user_name; }
+    [[nodiscard]] std::string getPassword() const { return m_user_data.password; }
 
     void updateCursorPos(Id doc_id);
 

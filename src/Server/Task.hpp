@@ -42,6 +42,22 @@ public:
         return std::move(h_.promise().value_);
     }
 
+    bool await_ready() const noexcept { return false; }
+
+    template<typename Promise>
+    void await_suspend(std::coroutine_handle<Promise> h) noexcept {
+        // Здесь можно планировать выполнение задачи
+        h_.resume();
+    }
+
+    T await_resume() {
+        if constexpr (std::is_same_v<T, void>) {
+            get();
+        } else {
+            return get();
+        }
+    }
+
 private:
     handle_type h_;
 };
@@ -79,6 +95,18 @@ public:
     void get() {
         if (!h_) throw std::runtime_error("empty Task");
         if (h_.promise().eptr_) std::rethrow_exception(h_.promise().eptr_);
+    }
+
+    bool await_ready() const noexcept { return false; }
+
+    template<typename Promise>
+    void await_suspend(std::coroutine_handle<Promise> h) noexcept {
+        // Здесь можно планировать выполнение задачи
+        h_.resume();
+    }
+
+    void await_resume() {
+        return get();
     }
 
 private:
