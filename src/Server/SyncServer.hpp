@@ -29,11 +29,19 @@ private:
     const std::vector<uint8_t>& buffer,
             size_t offset);
 
+private:
+
     void handleAuthRequest(int client_fd, const std::vector<uint8_t>& buffer);
     void handleRegistrationRequest(int client_fd, const std::vector<uint8_t>& buffer);
+    void handleGetNotesRequest(int client_fd, const std::vector<uint8_t>& buffer);
+    void handleSyncRequest(int client_fd, const std::vector<uint8_t>& buffer);
+    void handleCreateNoteRequest(int client_fd, const std::vector<uint8_t>& buffer);
 
     void sendAuthResponse(int client_fd, const Protocol::AuthResponse& response);
     void sendRegistrationResponse(int client_fd, const Protocol::RegistrationResponse& response);
+    void sendGetNotesResponse(int client_fd, const Protocol::GetNotesResponse& response);
+    void sendSyncResponse(int client_fd, const Protocol::SyncNoteResponse& response);
+    void sendCreateNoteResponse(int client_fd, const Protocol::CreateNoteResponse& response);
 
 public:
     SyncServer(int port, const std::string& host);

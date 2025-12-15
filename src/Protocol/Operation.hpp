@@ -21,6 +21,7 @@ namespace Protocol {
         REGISTRATION = 0x0002,
         GET_NOTES = 0x0003,
         SYNC = 0x0004,
+        CREATE_NOTE = 0x0005,
         INSERT,
         DELETE,
         UPDATE,

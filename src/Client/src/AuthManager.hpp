@@ -33,8 +33,14 @@ private slots:
 }
     void onAuthFailed(const QString& err) { emit loginFailed(err); }
 
-    void onRegistrationSuccess(uint32_t id) { emit registrationSuccess(id); }
-    void onRegistrationFailed(const QString& err) { emit registrationFailed(err); }
+    void onRegistrationSuccess(uint32_t id) {
+    std::cout << "Registration success" << std::endl;
+    emit registrationSuccess(id);
+}
+    void onRegistrationFailed(const QString& err) {
+    std::cout << "Registration failed" << std::endl;
+    emit registrationFailed(err);
+}
 
 private:
     NoteClient* m_client = nullptr;

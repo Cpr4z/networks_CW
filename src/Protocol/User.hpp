@@ -14,6 +14,7 @@ struct UserData {
 class User {
 public:
     explicit User(Id user_id, const std::string& login, const std::string& password);
+//    explicit User(const std::string& login, const std::string& password);
 
     [[nodiscard]] Id getCursorPosition() const { return m_cursor_pos; }
     [[nodiscard]] Id getDocId() const { return m_doc_id; }

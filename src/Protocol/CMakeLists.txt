@@ -12,4 +12,5 @@ target_include_directories(protocol PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_SOURCE_DIR}/include
         ${CMAKE_SOURCE_DIR}/include/json
-        ${CMAKE_SOURCE_DIR}/utils)
+        ${CMAKE_SOURCE_DIR}/utils
+)

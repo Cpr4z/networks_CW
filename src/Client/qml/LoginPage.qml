@@ -101,7 +101,6 @@ ApplicationWindow {
                 }
 
                 onClicked: {
-                    // console.log("before calling login nethod");
                     if (mode === "login")
                         authManager.login(username.text, password.text)
                     else
@@ -147,15 +146,17 @@ ApplicationWindow {
                     }
                 }
                 function onLoginFailed(reason) {
+                    status.color = "red"
                     status.text = reason
                 }
 
-                function onRegisterSuccess() {
+                function onRegistrationSuccess(userId) {
+                    console.log("Регситрация завершилась успешно")
                     status.color = "green"
                     status.text = "Регистрация прошла успешно! Теперь войдите."
                     mode = "login"
                 }
-                function onRegisterFailed(reason) {
+                function onRegistrationFailed(reason) {
                     status.color = "red"
                     status.text = reason
                 }

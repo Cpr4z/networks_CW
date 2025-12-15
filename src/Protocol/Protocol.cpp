@@ -216,9 +216,9 @@ namespace Protocol {
 
 
     std::optional<RegistrationRequest> decodeRegistrationRequest(const std::vector<uint8_t>& buffer) {
-        if (buffer.size() < 6) {
-            return std::nullopt;
-        }
+//        if (buffer.size() < 6) {
+//            return std::nullopt;
+//        }
 
         const uint8_t* ptr = buffer.data();
 
@@ -258,10 +258,10 @@ namespace Protocol {
     }
 
     std::optional<RegistrationResponse> decodeRegistrationResponse(const std::vector<uint8_t>& buffer) {
-        constexpr size_t MIN_SIZE = 3;
-        if (buffer.size() < MIN_SIZE) {
-            return std::nullopt;
-        }
+        constexpr size_t MIN_SIZE = 7;
+//        if (buffer.size() < MIN_SIZE) {
+//            return std::nullopt;
+//        }
         RegistrationResponse response;
         const uint8_t* ptr = buffer.data();
 
@@ -277,12 +277,69 @@ namespace Protocol {
         response.user_id = 0; // По умолчанию 0
         if (response.status == 0) {
             // Проверяем, что буфер содержит достаточно данных для userId
-            if (buffer.size() < MIN_SIZE + sizeof(uint32_t)) {
-                return std::nullopt;
-            }
+//            if (buffer.size() < MIN_SIZE + sizeof(uint32_t)) {
+//                return std::nullopt;
+//            }
             std::memcpy(&response.user_id, ptr, sizeof(uint32_t));
 //            ptr += sizeof(uint32_t);
         }
         return response;
     }
+
+
+    std::vector<uint8_t> encodeSyncRequest(const SyncNoteRequest& req) {
+        return {};
+    }
+
+    std::vector<uint8_t> encodeSyncResponse(const SyncNoteResponse& resp) {
+        return {};
+    }
+
+    std::optional<SyncNoteRequest> decodeSyncRequest(const std::vector<uint8_t>& buffer) {
+        return {};
+    }
+
+    std::optional<SyncNoteResponse> decodeSyncResponse(const std::vector<uint8_t>& buffer) {
+        return {};
+    }
+
+
+
+
+    std::vector<uint8_t> encodeGetNotesRequest(const GetNotesRequest& req) {
+        return {};
+    }
+
+    std::vector<uint8_t> encodeGetNotesResponse(const GetNotesResponse& response) {
+        return {};
+    }
+
+    std::optional<GetNotesRequest> decodeGetNotesRequest(const std::vector<uint8_t>& buffer) {
+        return {};
+    }
+
+    std::optional<GetNotesResponse> decodeGetNotesResponse(const std::vector<uint8_t>& buffer) {
+        return {};
+    }
+
+
+
+    std::vector<uint8_t> encodeCreateNoteRequest(const CreateNoteRequest& req) {
+        return {};
+    }
+
+
+    std::vector<uint8_t> encodeCreateNoteResponse(const CreateNoteResponse& resp) {
+        return {};
+    }
+
+    std::optional<CreateNoteRequest> decodeCreateNoteRequest(const std::vector<uint8_t>& buffer) {
+        return {};
+    }
+
+    std::optional<CreateNoteResponse> decodeCreateNoteResponse(const std::vector<uint8_t>& buffer) {
+        return {};
+    }
+
+
 }

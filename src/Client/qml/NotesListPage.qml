@@ -2,12 +2,11 @@ import QtQuick
 import QtQuick.Controls
 
 ApplicationWindow {
+    id: window
     visible: true
     width: 600
     height: 400
     title: "Мои заметки"
-
-    property string userId
 
     Column {
         anchors.fill: parent
@@ -16,47 +15,54 @@ ApplicationWindow {
 
         ListView {
             id: list
-            model: notesModel
+            model: notesManager.model
+
             delegate: Rectangle {
                 width: parent.width
                 height: 40
                 border.width: 1
+
                 Text {
                     anchors.centerIn: parent
-                    text: model.title
+                    text: title
                 }
+
                 MouseArea {
                     anchors.fill: parent
-                    onClicked: notesModel.openNote(model.id)
+                    onClicked: notesManager.openNote(id)
                 }
             }
         }
 
         Button {
             text: "Создать новую заметку"
-            onClicked: {
-                console.log("Создание новой заметки")
-
-                var component = Qt.createComponent("qrc:/qml/NoteEditor.qml")
-                if (component.status === Component.Ready) {
-                    var editor = component.createObject(parent) // Важно: parent = текущий ApplicationWindow
-                    if (editor === null) {
-                        console.log("Ошибка создания NoteEditor:", component.errorString())
-                    } else {
-                        // Можно скрыть текущий контент
-                        list.visible = false
-                        visible = false
-                    }
-                } else if (component.status === Component.Error) {
-                    console.log("Ошибка загрузки NoteEditor:", component.errorString())
-                }
-            }
+            onClicked: createDialog.open()
         }
 
         Text {
             visible: list.count === 0
             text: "У вас пока нет заметок"
             anchors.horizontalCenter: parent.horizontalCenter
+        }
+    }
+
+    CreateNoteDialog {
+        id: createDialog
+        parent: window.contentItem
+        anchors.centerIn: parent
+    }
+
+    Connections {
+        target: notesManager
+        function onNoteOpened(noteId, title, text) {
+            var component = Qt.createComponent("qrc:/qml/NoteEditor.qml")
+            if (component.status === Component.Ready) {
+                var editor = component.createObject(window, {
+                    noteId: noteId,
+                    initialTitle: title,
+                    initialText: text
+                })
+            }
         }
     }
 }

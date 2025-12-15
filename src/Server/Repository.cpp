@@ -2,35 +2,24 @@
 
 #include <algorithm>
 
-bool Repository::validateUser(int user_id, const std::string& login, const std::string& password) {
+std::expected<uint32_t, AuthError> Repository::validateUser(const std::string& login, const std::string& password) {
     const auto user = std::ranges::find_if(m_user_map, [&](const auto& item){
-        return item.second->getId() == user_id;
+        return item.second->getUserName() == login;
     });
 
     if (user == m_user_map.end()) {
-        return false;
+        return std::unexpected<AuthError>(AuthError::UserNotFound);
     }
 
-    if (user->second->getUserName() != login) {
-
+    if (user->second->getPassword() != password) {
+        return std::unexpected<AuthError>(AuthError::WrongPassword);
     }
-
-    if (user->second->getPassword() == password) {
-
-    }
-
-    return true;
+    return (*user).second->getId();
 }
 
-bool Repository::isUserExists(int user_id) {
-    const auto user = std::ranges::find_if(m_user_map, [&](const auto& item){
-        return item.second->getId() == user_id;
-    });
-    return user != m_user_map.end();
-}
-
-void Repository::addUser(int user_id, const std::string& login, const std::string& password) {
-    m_user_map[user_id] = std::make_shared<User>(user_id, login, password);
+uint32_t Repository::addUser(const std::string& login, const std::string& password) {
+    m_user_map[++m_users_count] = std::make_shared<User>(m_users_count, login, password);
+    return m_users_count;
 }
 
 void Repository::addDocument(int user_id, const std::string& name) {

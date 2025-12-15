@@ -1,6 +1,7 @@
 #include "src/Client.hpp"
 
 #include "src/AuthManager.hpp"
+#include "src/NotesManager.hpp"
 //#include "src/NotesModel.hpp"
 
 #include <QGuiApplication>
@@ -14,10 +15,10 @@ int main(int argc, char** argv) {
     ClientPtr client = std::make_unique<NoteClient>();
 
     AuthManager auth(client.get());
-//    NotesModel notes(client.get());
+    NotesManager notesManager(client.get());
 
     engine.rootContext()->setContextProperty("authManager", &auth);
-//    engine.rootContext()->setContextProperty("notesModel", &notes);
+    engine.rootContext()->setContextProperty("notesManager", &notesManager);
 
     engine.load(QUrl(QStringLiteral("qrc:/qml/LoginPage.qml")));
     if (engine.rootObjects().isEmpty())

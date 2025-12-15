@@ -27,13 +27,26 @@ namespace Protocol {
         uint32_t user_id;
     };
 
+    struct GetNotesRequest {
+//        Operation op;
+        uint32_t user_id;
+    };
+
+    struct GetNotesResponse {
+        Operation op;
+        // ??
+    };
+
     struct CreateNoteRequest {
+        uint32_t user_id;
+        std::string note_title;
 //        Operation op;
     };
 
-
     struct CreateNoteResponse {
-//        Operation op;
+        Operation op;
+        uint8_t status;
+        uint32_t note_id;
     };
 
     struct SyncNoteRequest {
@@ -41,6 +54,6 @@ namespace Protocol {
     };
 
     struct SyncNoteResponse {
-//        Operation op;
+        Operation op;
     };
 }

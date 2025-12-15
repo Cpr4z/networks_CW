@@ -20,6 +20,10 @@ set(QT
     src/ClientWindow.cpp
     src/AuthManager.hpp
     src/AuthManager.cpp
+    src/NotesManager.hpp
+    src/NotesManager.cpp
+    src/NotesModel.hpp
+    src/NotesModel.cpp
     )
 
 add_executable(${PROJECT_NAME} ${HEADERS} ${SOURCES} ${QT} main_client.cpp)

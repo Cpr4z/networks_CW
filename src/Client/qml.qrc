@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/">
+        <file>qml/CreateNoteDialog.qml</file>
         <file>qml/NoteEditor.qml</file>
         <file>qml/LoginPage.qml</file>
         <file>qml/NotesListPage.qml</file>

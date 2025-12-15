@@ -11,8 +11,6 @@
 
 #include "Repository.hpp"
 
-#include <json/json.hpp>
-
 class NoteServer {
 public:
     explicit NoteServer(int port, const std::string& host);

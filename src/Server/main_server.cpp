@@ -55,6 +55,7 @@ int main() {
     signal(SIGINT, signal_handler);
 
     SyncServer server(8080, "127.0.0.1");
+//    SyncServer server(8080, "0.0.0.0");
 
     // Запуск сервера в отдельном потоке
     std::thread server_thread([&server]() {

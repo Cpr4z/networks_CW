@@ -21,9 +21,6 @@ NoteServer::NoteServer(int port, const std::string& host)
 void NoteServer::handleAuthRequest(int client_fd, const std::vector<uint8_t>& buffer) {
     // Получаем данные пользователя, проверяем по айдишнику есть ли такой пользователь, если нет, то возвращаем соответствующий результат
     const auto& request = Protocol::decodeAuthRequest(buffer);
-    if (m_repository->isUserExists(client_fd)) {
-
-    }
 //    else {
 //        m_repository->addUser(client_fd, request->login, request->password);
 //    }
@@ -31,8 +28,6 @@ void NoteServer::handleAuthRequest(int client_fd, const std::vector<uint8_t>& bu
 
 void NoteServer::handleRegistrationRequest(int client_fd, const std::vector<uint8_t>& buffer) {
     const auto& request = Protocol::decodeRegistrationRequest(buffer);
-
-    m_repository->addUser(client_fd, request->login, request->password);
 }
 
 size_t NoteServer::getMessageLength(Protocol::Operation op,

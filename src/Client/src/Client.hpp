@@ -21,25 +21,24 @@ public:
     void sendAuthRequest(const QString& login, const QString& password);
     void sendRegistrationRequest(const QString& login, const QString& password);
     void sendSyncRequest();
-    void sendGetNotesRequest();
-
-    // запрос на синхронизацию данных о заметках для пользователя
-    void fetchNotes();
-
-    // отправка данных о редактировании конкретной заметки
-    void sendNote(const QString& title, const QString& content);
+    void sendGetNotesRequest(); // user_id
+    void sendCreateNoteRequest(const QString& title); // user_id
 
     void setUsername(const QString& username) { m_username = username; }
 
 signals:
+    // AUTH
     void authSuccess(uint32_t userId);
     void authFailed(const QString& reason);
 
+    // REGISTRATION
     void registrationSuccess(uint32_t userId);
     void registrationFailed(const QString& reason);
 
-    void notesReceived(const QList<QJsonObject>& notes);
-    void noteSaved(const QString& title);
+    // CREATE_NOTE
+    void noteCreationSuccess(uint32_t noteId);
+    void noteCreationFailes(const QString reason);
+
 
 private slots:
     void onReadyRead();
@@ -49,8 +48,10 @@ private:
     void handleRegistrationResponse(const std::vector<uint8_t>& buffer);
     void handleSyncResponse(const std::vector<uint8_t>& buffer);
     void handleGetNotesResponse(const std::vector<uint8_t>& buffer);
+    void handleCreateNoteResponse(const std::vector<uint8_t>& buffer);
 
 private:
+    uint32_t m_user_id = 0;
     QString m_username;
     QTcpSocket m_socket;
     DocumentsMap m_documents;

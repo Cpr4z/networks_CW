@@ -31,6 +31,36 @@ void SyncServer::sendRegistrationResponse(int client_fd, const Protocol::Registr
     }
 }
 
+void SyncServer::sendGetNotesResponse(int client_fd, const Protocol::GetNotesResponse& response) {
+    std::vector<uint8_t> response_buffer = Protocol::encodeGetNotesResponse(response);
+    ssize_t sent = send(client_fd, response_buffer.data(), response_buffer.size(), 0);
+    if (sent < 0) {
+        perror("send");
+    } else {
+        std::cout << "Sent response to client " << client_fd << std::endl;
+    }
+}
+
+void SyncServer::sendSyncResponse(int client_fd, const Protocol::SyncNoteResponse& response) {
+    std::vector<uint8_t> response_buffer = Protocol::encodeSyncResponse(response);
+    ssize_t sent = send(client_fd, response_buffer.data(), response_buffer.size(), 0);
+    if (sent < 0) {
+        perror("send");
+    } else {
+        std::cout << "Sent response to client " << client_fd << std::endl;
+    }
+}
+
+void SyncServer::sendCreateNoteResponse(int client_fd, const Protocol::CreateNoteResponse& response) {
+    std::vector<uint8_t> response_buffer = Protocol::encodeCreateNoteResponse(response);
+    ssize_t sent = send(client_fd, response_buffer.data(), response_buffer.size(), 0);
+    if (sent < 0) {
+        perror("send");
+    } else {
+        std::cout << "Sent response to client " << client_fd << std::endl;
+    }
+}
+
 void SyncServer::handleAuthRequest(int client_fd, const std::vector<uint8_t>& buffer) {
     const auto& request = Protocol::decodeAuthRequest(buffer);
     std::cout << "Auth request from client " << client_fd << std::endl;
@@ -39,15 +69,25 @@ void SyncServer::handleAuthRequest(int client_fd, const std::vector<uint8_t>& bu
 
     Protocol::AuthResponse response;
     // mock data for test
-    {
-        response.op = Protocol::Operation::AUTH;
+//    {
+//        response.op = Protocol::Operation::AUTH;
+//        response.status = 0;
+//        response.user_id = 1;
+//    }
+
+    response.op = Protocol::Operation::AUTH;
+    auto result = m_repository->validateUser(request->login, request->password);
+    if (result) {
         response.status = 0;
-        response.user_id = 1;
+        response.user_id = *result;
+    } else {
+        response.user_id = 0;
+        response.status = static_cast<uint8_t>(result.error());
     }
 
-    if (m_repository->isUserExists(client_fd)) {
-
-    }
+//    if (m_repository->isUserExists(client_fd)) {
+//
+//    }
     sendAuthResponse(client_fd, response);
 }
 
@@ -59,17 +99,39 @@ void SyncServer::handleRegistrationRequest(int client_fd, const std::vector<uint
     Protocol::RegistrationResponse response;
 
     // mock data for test
-    {
-        response.op = Protocol::Operation::REGISTRATION;
+//    {
+//        response.op = Protocol::Operation::REGISTRATION;
+//        response.status = 0;
+//        response.user_id = 34;
+//    }
+
+    response.op = Protocol::Operation::REGISTRATION;
+    auto result = m_repository->validateUser(request->login, request->password);
+    if (result) {
         response.status = 1;
-        response.user_id = 34;
-    }
-
-
-    if (m_repository->isUserExists(client_fd)) {
-
+        response.user_id = *result;
+    } else {
+        std::cout << "Registration: user not found, adding new user" << std::endl;
+//        auto new_user_id = m_repository->addUser(request->login, request->password);
+        response.status = 0;
+        response.user_id = m_repository->addUser(request->login, request->password);
+        std::cout << "Registration status is: " << static_cast<int>(response.status) << std::endl;
+        std::cout << "New user id is: " << response.user_id << std::endl;
     }
     sendRegistrationResponse(client_fd, response);
+}
+
+void SyncServer::handleGetNotesRequest(int client_fd, const std::vector<uint8_t>& buffer) {
+    const auto& request = Protocol::decodeGetNotesRequest(buffer);
+
+}
+
+void SyncServer::handleSyncRequest(int client_fd, const std::vector<uint8_t>& buffer) {
+    const auto& request = Protocol::decodeSyncRequest(buffer);
+}
+
+void SyncServer::handleCreateNoteRequest(int client_fd, const std::vector<uint8_t>& buffer) {
+    const auto& request = Protocol::decodeCreateNoteRequest(buffer);
 }
 
 size_t SyncServer::getMessageLength(Protocol::Operation op,
@@ -114,6 +176,19 @@ void SyncServer::processClientMessage(int client_fd, const std::vector<uint8_t>&
                 handleRegistrationRequest(client_fd, message);
                 break;
             }
+            case Protocol::Operation::GET_NOTES: {
+                handleGetNotesRequest(client_fd, message);
+                break;
+            }
+            case Protocol::Operation::SYNC: {
+                handleSyncRequest(client_fd, message);
+                break;
+            }
+            case Protocol::Operation::CREATE_NOTE: {
+                handleCreateNoteRequest(client_fd, message);
+                break;
+            }
+
             default:
                 std::cerr << "Unknown operation from client " << client_fd
                           << ": " << static_cast<uint16_t>(op) << std::endl;
