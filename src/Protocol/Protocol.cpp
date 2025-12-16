@@ -325,20 +325,158 @@ namespace Protocol {
 
 
     std::vector<uint8_t> encodeCreateNoteRequest(const CreateNoteRequest& req) {
-        return {};
+        const auto op = static_cast<uint16_t>(Operation::CREATE_NOTE);
+        const std::string& title = req.note_title;
+        const auto titleLen = static_cast<uint16_t>(title.size());
+
+        // Общий размер:
+        // 1  — op
+        // 4  — user_id
+        // 2  — длина заголовка
+        // N  — заголовок
+        const size_t totalSize =
+                sizeof(uint16_t) +
+                sizeof(uint32_t) +
+                sizeof(uint16_t) +
+                titleLen;
+
+
+        std::vector<uint8_t> buffer(totalSize);
+        uint8_t* ptr = buffer.data();
+
+        //  Код операции
+        std::memcpy(ptr, &op, sizeof(uint16_t));
+        ptr += sizeof(uint16_t);
+
+        // user_id
+        std::memcpy(ptr, &req.user_id, sizeof(uint32_t));
+        ptr += sizeof(uint32_t);
+
+        // длина заголовка
+        std::memcpy(ptr, &titleLen, sizeof(uint16_t));
+        ptr += sizeof(uint16_t);
+
+        // сам заголовок
+        std::memcpy(ptr, title.data(), titleLen);
+
+        return buffer;
     }
 
 
     std::vector<uint8_t> encodeCreateNoteResponse(const CreateNoteResponse& resp) {
-        return {};
+        const uint16_t titleLen = static_cast<uint16_t>(resp.note_title.size());
+
+        // 2 (op) + 1 (status) + 4 (note_id) + 2 (titleLen) + title
+        std::vector<uint8_t> buffer(2 + 1 + 4 + 2 + titleLen);
+        uint8_t* ptr = buffer.data();
+
+        uint16_t op = static_cast<uint16_t>(resp.op);
+        std::memcpy(ptr, &op, sizeof(op));
+        ptr += sizeof(op);
+
+        std::memcpy(ptr, &resp.status, sizeof(resp.status));
+        ptr += sizeof(resp.status);
+
+        uint32_t noteId = resp.note_id;
+        std::memcpy(ptr, &noteId, sizeof(noteId));
+        ptr += sizeof(noteId);
+
+        uint16_t titleLenNet = titleLen;
+        std::memcpy(ptr, &titleLenNet, sizeof(titleLenNet));
+        ptr += sizeof(titleLenNet);
+
+        std::memcpy(ptr, resp.note_title.data(), titleLen);
+
+        return buffer;
     }
 
     std::optional<CreateNoteRequest> decodeCreateNoteRequest(const std::vector<uint8_t>& buffer) {
-        return {};
+        constexpr size_t MIN_SIZE =
+                sizeof(uint16_t) +   // op
+                sizeof(uint32_t) +  // user_id
+                sizeof(uint16_t);   // title_len
+
+        if (buffer.size() < MIN_SIZE) {
+            return std::nullopt;
+        }
+
+        const uint8_t* ptr = buffer.data();
+
+        // 1️⃣ Код операции
+        uint16_t op;
+        std::memcpy(&op, ptr, sizeof(uint16_t));
+        ptr += sizeof(uint16_t);
+
+        if (op != static_cast<uint16_t>(Operation::CREATE_NOTE)) {
+            return std::nullopt;
+        }
+
+        // 2️⃣ user_id
+        uint32_t userId;
+        std::memcpy(&userId, ptr, sizeof(uint32_t));
+        ptr += sizeof(uint32_t);
+
+        // 3️⃣ длина заголовка
+        uint16_t titleLen;
+        std::memcpy(&titleLen, ptr, sizeof(uint16_t));
+        ptr += sizeof(uint16_t);
+
+        // Проверка размера
+        if (buffer.size() < MIN_SIZE + titleLen) {
+            return std::nullopt;
+        }
+
+        // 4️⃣ заголовок заметки
+        std::string title(
+                reinterpret_cast<const char*>(ptr),
+                titleLen
+        );
+
+        return CreateNoteRequest{
+                .user_id = userId,
+                .note_title = std::move(title)
+        };
     }
 
     std::optional<CreateNoteResponse> decodeCreateNoteResponse(const std::vector<uint8_t>& buffer) {
-        return {};
+        if (buffer.size() < 2 + 1 + 4 + 2)
+            return std::nullopt;
+
+        CreateNoteResponse resp{};
+        const uint8_t* ptr = buffer.data();
+        const uint8_t* end = buffer.data() + buffer.size();
+
+        // 1. Operation
+        uint16_t op;
+        std::memcpy(&op, ptr, sizeof(op));
+        resp.op = static_cast<Operation>(ntohs(op));
+        ptr += sizeof(op);
+
+        // 2. Status
+        std::memcpy(&resp.status, ptr, sizeof(resp.status));
+        ptr += sizeof(resp.status);
+
+        // 3. Note ID
+        uint32_t noteId = resp.note_id;
+        std::memcpy(&noteId, ptr, sizeof(noteId));
+//        resp.note_id = ntohl(noteId);
+        ptr += sizeof(noteId);
+
+        // 4. Title length
+        uint16_t titleLen;
+        std::memcpy(&titleLen, ptr, sizeof(titleLen));
+        titleLen = titleLen;
+        ptr += sizeof(titleLen);
+
+        // 🔐 Проверка границ
+        if (ptr + titleLen > end)
+            return std::nullopt;
+
+        // 5. Title
+        resp.note_title.assign(reinterpret_cast<const char*>(ptr), titleLen);
+        ptr += titleLen;
+
+        return resp;
     }
 
 

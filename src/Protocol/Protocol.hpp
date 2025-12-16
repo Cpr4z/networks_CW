@@ -4,6 +4,7 @@
 #include <optional>
 
 #include "Requests.hpp"
+#include "Responses.hpp"
 
 #include "Operation.hpp"
 

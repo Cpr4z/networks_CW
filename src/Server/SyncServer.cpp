@@ -53,6 +53,7 @@ void SyncServer::sendSyncResponse(int client_fd, const Protocol::SyncNoteRespons
 
 void SyncServer::sendCreateNoteResponse(int client_fd, const Protocol::CreateNoteResponse& response) {
     std::vector<uint8_t> response_buffer = Protocol::encodeCreateNoteResponse(response);
+    std::cout << "After data encoded for Note Response" << std::endl;
     ssize_t sent = send(client_fd, response_buffer.data(), response_buffer.size(), 0);
     if (sent < 0) {
         perror("send");
@@ -131,7 +132,27 @@ void SyncServer::handleSyncRequest(int client_fd, const std::vector<uint8_t>& bu
 }
 
 void SyncServer::handleCreateNoteRequest(int client_fd, const std::vector<uint8_t>& buffer) {
+    std::cout << "Create note request" << std::endl;
     const auto& request = Protocol::decodeCreateNoteRequest(buffer);
+    std::cout << "User id, who want to create note: " << request->user_id << std::endl;
+    std::cout << "Note title: " << request->note_title << std::endl;
+
+    Protocol::CreateNoteResponse response;
+    response.op = Protocol::Operation::CREATE_NOTE;
+
+    if (m_repository->isNoteExists(request->user_id, request->note_title)) {
+        std::cout << "Note with this name is already exists for this user" << std::endl;
+        response.status = 1;
+        response.note_id = 0;
+    } else {
+        std::cout << "Creating new note" << std::endl;
+        response.status = 0;
+        response.note_id = m_repository->addNote(request->user_id, request->note_title);
+        response.note_title = request->note_title;
+        std::cout << "After adding new note with title:" << response.note_title << " and id: " << response.note_id << std::endl;
+    }
+
+    sendCreateNoteResponse(client_fd, response);
 }
 
 size_t SyncServer::getMessageLength(Protocol::Operation op,
@@ -155,6 +176,20 @@ size_t SyncServer::getMessageLength(Protocol::Operation op,
             std::memcpy(&passwordLen, buffer.data() + offset + 4, sizeof(uint16_t));
 
             return 6 + loginLen + passwordLen;
+        }
+        case Protocol::Operation::GET_NOTES: {
+            return 0;
+//            break;
+        }
+        case Protocol::Operation::SYNC: {
+            return 0;
+        }
+        case Protocol::Operation::CREATE_NOTE: {
+            uint16_t titleLen;
+            std::cout << "offset is: " << offset << std::endl;
+            std::memcpy(&titleLen, buffer.data() + offset + 2 + 4, sizeof(uint16_t));
+            std::cout << "Create note message size: " << 8 + titleLen << std::endl;
+            return 8 + titleLen; // 2 (op) + 4 (user_id) + 2 (titleLen) + title;
         }
         default:
             std::cerr << "Unknown operation: " << static_cast<int>(op) << std::endl;
@@ -221,6 +256,8 @@ void SyncServer::processClientMessages(int client_fd) {
                   << ", total buffer size: " << buffer.size() << std::endl;
 
         size_t processed = 0;
+        std::cout << "Buffer size - processed: ";
+        std::cout << buffer.size() - processed << std::endl;
         while (buffer.size() - processed >= 2) {
             uint16_t opCode;
             std::memcpy(&opCode, buffer.data() + processed, sizeof(uint16_t));
@@ -243,6 +280,7 @@ void SyncServer::processClientMessages(int client_fd) {
                     buffer.begin() + processed + messageLength
             );
 
+            std::cout << "Before processing message with operation code: " << opCode << std::endl;
             processClientMessage(client_fd, message);
             processed += messageLength;
         }

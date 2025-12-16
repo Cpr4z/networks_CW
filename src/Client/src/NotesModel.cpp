@@ -1,16 +1,19 @@
 #include "NotesModel.hpp"
 
-NotesModel::NotesModel(QObject* parent)
-        : QAbstractListModel(parent) {}
+#include <iostream>
 
-int NotesModel::rowCount(const QModelIndex&) const {
+NotesModel::NotesModel(QObject* parent)
+        : QAbstractListModel(parent) {
+}
+
+int NotesModel::rowCount(const QModelIndex& parent) const {
+    if (parent.isValid())
+        return 0;
+
     return static_cast<int>(m_notes.size());
 }
 
 QVariant NotesModel::data(const QModelIndex& index, int role) const {
-    if (!index.isValid() || index.row() >= rowCount())
-        return {};
-
     const auto& note = m_notes[index.row()];
 
     switch (role) {
@@ -28,8 +31,10 @@ QHash<int, QByteArray> NotesModel::roleNames() const {
 }
 
 void NotesModel::addNote(int id, const QString& title) {
-    beginInsertRows(QModelIndex(), rowCount(), rowCount());
+    const int row = m_notes.size();
+    beginInsertRows(QModelIndex(), row, row);
     m_notes.push_back({ id, title });
+//    std::cout << m_notes.size() << " " << this <<  std::endl;
     endInsertRows();
 }
 

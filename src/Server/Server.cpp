@@ -213,7 +213,7 @@ void NoteServer::stop() {
 void NoteServer::createDocument() {
     Id new_id = getNextDocId();
     std::lock_guard<std::mutex> lock(m_mutex);
-    m_documents.insert({new_id, std::make_shared<Document>(new_id)});
+//    m_documents.insert({new_id, std::make_shared<Note>(new_id)});
 }
 
 //void NoteServer::createUser(const std::string& name) {
@@ -224,7 +224,7 @@ void NoteServer::createDocument() {
 
 void NoteServer::closeDocument(Id id) {
     std::lock_guard<std::mutex> lock(m_mutex);
-    m_documents.erase(id);
+//    m_documents.erase(id);
 }
 
 void NoteServer::deleteUser(Id id) {

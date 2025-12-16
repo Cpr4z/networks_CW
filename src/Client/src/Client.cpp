@@ -48,6 +48,8 @@ void NoteClient::sendGetNotesRequest() {
 
 void NoteClient::sendCreateNoteRequest(const QString& title) {
     Protocol::CreateNoteRequest req = { m_user_id, title.toStdString() };
+    std::cout << "User who want to create note: " << m_user_id << std::endl;
+    std::cout << "Note title: " << title.toStdString() << std::endl;
     std::vector<uint8_t> requestData = Protocol::encodeCreateNoteRequest(req);
     m_socket.write(reinterpret_cast<char*>(requestData.data()), requestData.size());
 }
@@ -100,7 +102,15 @@ void NoteClient::handleGetNotesResponse(const std::vector<uint8_t>& buffer) {
 void NoteClient::handleCreateNoteResponse(const std::vector<uint8_t>& buffer) {
     const auto& response_opt = Protocol::decodeCreateNoteResponse(buffer);
     if (response_opt.has_value()) {
-
+        const auto& response = response_opt.value();
+        std::cout << "Status of creating new note: " << static_cast<int>(response.status) << std::endl;
+        std::cout << "Id of created note: " << response.note_id << std::endl;
+        std::cout << "Title of new note is: " << response.note_title << std::endl;
+        if (response.status == 0) {
+            emit noteCreationSuccess(QString::fromStdString(response.note_title), response.note_id);
+        } else {
+            emit noteCreationFailed("Заметка с таким именем уже существует");
+        }
     }
 }
 
@@ -132,9 +142,12 @@ void NoteClient::onReadyRead() {
                     break;
 
                 case Protocol::Operation::CREATE_NOTE:
+                    std::cout << "Got create note response" << std::endl;
                     handleCreateNoteResponse(buffer);
+                    break;
 
                 default:
+                    std::cout << "Unknown operation code: " << static_cast<uint16_t>(op) << std::endl;
                     break;
             }
         }

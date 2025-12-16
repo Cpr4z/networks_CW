@@ -1,7 +1,7 @@
 #pragma once
 
 #include "User.hpp"
-#include "Document.hpp"
+#include "Note.hpp"
 
 #include <expected>
 
@@ -26,13 +26,16 @@ public:
 //    void addUser(int user_id, const std::string& login, const std::string& password);
     uint32_t addUser(const std::string& login, const std::string& password);
     std::expected<uint32_t, AuthError> validateUser(const std::string& login, const std::string& password);
-    void addDocument(int user_id, const std::string& name);
+    uint32_t addNote(uint32_t user_id, const std::string& title);
+    bool isNoteExists(uint32_t user_id, const std::string& title);
+//    void addDocument(int user_id, const std::string& name);
 
 private:
 //    Users m_users;
     int m_users_count = 0;
-    UsersMap m_user_map;
-    DocumentsMap m_document_map;
+    int m_notes_count = 0;
+    UsersMap m_users_map;
+    NotesMap m_notes_map;
 };
 
 using RepositoryPtr = std::shared_ptr<Repository>;

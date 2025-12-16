@@ -11,7 +11,7 @@
 
 #include <Protocol.hpp>
 
-#include <Document.hpp>
+#include <Note.hpp>
 
 class NoteClient : public QObject {
     Q_OBJECT
@@ -36,8 +36,8 @@ signals:
     void registrationFailed(const QString& reason);
 
     // CREATE_NOTE
-    void noteCreationSuccess(uint32_t noteId);
-    void noteCreationFailes(const QString reason);
+    void noteCreationSuccess(const QString& title, uint32_t noteId);
+    void noteCreationFailed(const QString reason);
 
 
 private slots:
@@ -54,7 +54,7 @@ private:
     uint32_t m_user_id = 0;
     QString m_username;
     QTcpSocket m_socket;
-    DocumentsMap m_documents;
+//    DocumentsMap m_documents;
 };
 
 using ClientPtr = std::unique_ptr<NoteClient>;

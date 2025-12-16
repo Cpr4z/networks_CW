@@ -13,18 +13,19 @@ Q_OBJECT
 public:
     explicit NotesManager(NoteClient* client, QObject* parent = nullptr);
 
-    QAbstractListModel* model();
+    QAbstractListModel* model() const;
 
     Q_INVOKABLE void createNote(const QString& title);
     Q_INVOKABLE void openNote(int noteId);
     Q_INVOKABLE void updateNote(int noteId, const QString& text);
 
+private slots:
+
+    void onNoteCreationSuccess(const QString& title, uint32_t noteId);
+
+    void onNoteCreationFailed(const QString& reason);
+
 signals:
-
-    void onNoteCreationSuccess(uint32_t noteId);
-    void onNoteCreationFailed(const QString reason);
-
-
     void noteOpened(int noteId, QString title, QString text);
 
 private:

@@ -1,19 +1,19 @@
-#include "Document.hpp"
+#include "Note.hpp"
 
 #include <ranges>
 
-Document::Document(Id id) : m_id(id) {
+Note::Note(Id id, const std::string& title) : m_note_data({id, 0, title, {}, {}}) {
 }
 
-void Document::addUser(const User& user) {
-    m_current_users.emplace_back(std::make_shared<User>(user));
+void Note::addUser(const User& user) {
+//    m_current_users.emplace_back(std::make_shared<User>(user));
 }
 
-void Document::removeUser(Id user_id)
+void Note::removeUser(Id user_id)
 {
-    std::erase_if(m_current_users, [user_id](const auto& user){
-        return user->getId() == user_id;
-    });
+//    std::erase_if(m_current_users, [user_id](const auto& user){
+//        return user->getId() == user_id;
+//    });
 }
 
 // Запросы клиента

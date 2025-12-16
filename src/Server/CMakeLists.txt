@@ -12,7 +12,7 @@ set(HEADERS
         Task.hpp
         SyncServer.hpp
 #        User.hpp
-#        Document.hpp
+#        Note.hpp
         Repository.hpp
         )
 
@@ -24,7 +24,7 @@ set(SOURCES
         Reactor.cpp
         Task.cpp
         SyncServer.cpp
-#        Document.cpp
+#        Note.cpp
 #        User.cpp
         Repository.cpp
 )

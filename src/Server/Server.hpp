@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include <Document.hpp>
+#include <Note.hpp>
 #include <User.hpp>
 
 #include "Reactor.hpp"
@@ -71,7 +71,7 @@ private:
 
     std::unordered_map<int, std::shared_ptr<User>> m_client_users;
     std::mutex m_mutex;
-    DocumentsMap m_documents;
+//    DocumentsMap m_documents;
     UsersMap m_users;
 
     std::thread m_reactor_thread;
