@@ -28,6 +28,9 @@ public:
     std::expected<uint32_t, AuthError> validateUser(const std::string& login, const std::string& password);
     uint32_t addNote(uint32_t user_id, const std::string& title);
     bool isNoteExists(uint32_t user_id, const std::string& title);
+    bool isNoteExists(uint32_t user_id, uint32_t note_id);
+    std::string getNoteText(uint32_t user_id, uint32_t note_id);
+    void updateNoteText(uint32_t note_id, uint32_t user_id, const std::string& text);
 //    void addDocument(int user_id, const std::string& name);
 
 private:

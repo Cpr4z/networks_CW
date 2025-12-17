@@ -42,4 +42,16 @@ namespace Protocol {
     std::vector<uint8_t> encodeCreateNoteResponse(const CreateNoteResponse& resp);
     std::optional<CreateNoteRequest> decodeCreateNoteRequest(const std::vector<uint8_t>& buffer);
     std::optional<CreateNoteResponse> decodeCreateNoteResponse(const std::vector<uint8_t>& buffer);
+
+    // OPEN_NOTE
+    std::vector<uint8_t> encodeOpenNoteRequest(const OpenNoteRequest& req);
+    std::vector<uint8_t> encodeOpenNoteResponse(const OpenNoteResponse& resp);
+    std::optional<OpenNoteRequest> decodeOpenNoteRequest(const std::vector<uint8_t>& buffer);
+    std::optional<OpenNoteResponse> decodeOpenNoteResponse(const std::vector<uint8_t>& buffer);
+
+    // UPDATE_TEXT
+    std::vector<uint8_t> encodeUpdateTextRequest(const UpdateTextRequest& req);
+    std::vector<uint8_t> encodeUpdateTextResponse(const UpdateTextResponse& resp);
+    std::optional<UpdateTextRequest> decodeUpdateTextRequest(const std::vector<uint8_t>& buffer);
+    std::optional<UpdateTextResponse> decodeUpdateTextResponse(const std::vector<uint8_t>& buffer);
 };

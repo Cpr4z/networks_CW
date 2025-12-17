@@ -45,7 +45,7 @@ bool Repository::isNoteExists(uint32_t user_id, const std::string& title) {
     return note != user->second.end();
 }
 
-uint32_t Repository::addNote(uint32_t user_id, const std::string& title) {
+bool Repository::isNoteExists(uint32_t user_id, uint32_t note_id) {
     const auto& user = std::ranges::find_if(m_notes_map, [&](const auto& item){
         return item.first->getId() == user_id;
     });
@@ -55,9 +55,72 @@ uint32_t Repository::addNote(uint32_t user_id, const std::string& title) {
         std::cerr << "There is not user with id: " << user_id << std::endl;
     }
 
+    const auto& note = std::ranges::find_if(user->second, [&](const auto& item){
+        return item->getId() == note_id;
+    });
+
+    return note != user->second.end();
+}
+
+uint32_t Repository::addNote(uint32_t user_id, const std::string& title) {
+    const auto& user = std::ranges::find_if(m_notes_map, [&](const auto& item){
+        return item.first->getId() == user_id;
+    });
+
+    if (user == m_notes_map.end()) {
+        std::cerr << "Error while adding new note from user" << std::endl;
+        std::cerr << "There is not user with id: " << user_id << std::endl;
+        return 0;
+    }
+
     const uint32_t newNoteId = ++m_notes_count;
 
     user->second.emplace_back(std::make_shared<Note>(newNoteId, title));
 
     return newNoteId;
+}
+
+std::string Repository::getNoteText(uint32_t user_id, uint32_t note_id) {
+    const auto& user = std::ranges::find_if(m_notes_map, [&](const auto& item){
+        return item.first->getId() == user_id;
+    });
+
+    if (user == m_notes_map.end()) {
+        std::cerr << "Error while adding new note from user" << std::endl;
+        std::cerr << "There is not user with id: " << user_id << std::endl;
+        return {};
+    }
+
+    const auto& note = std::ranges::find_if(user->second, [&](const auto& item){
+        return item->getId() == note_id;
+    });
+
+    if (note == user->second.end()) {
+        std::cerr << "Error while opening note with id - " << note_id << " for user with id - " << user_id << std::endl;
+        return {};
+    }
+    return (*note)->getText();
+}
+
+void Repository::updateNoteText(uint32_t note_id, uint32_t user_id, const std::string& text) {
+    auto user = std::ranges::find_if(m_notes_map, [&](const auto& item){
+        return item.first->getId() == user_id;
+    });
+
+    if (user == m_notes_map.end()) {
+        std::cerr << "Error while adding new note from user" << std::endl;
+        std::cerr << "There is not user with id: " << user_id << std::endl;
+        return;
+    }
+
+    auto note = std::ranges::find_if(user->second, [&](const auto& item){
+        return item->getId() == note_id;
+    });
+
+    if (note == user->second.end()) {
+        std::cerr << "Error while updating note text with id - " << note_id << " for user with id - " << user_id << std::endl;
+        return;
+    }
+
+    (*note)->setText(text);
 }

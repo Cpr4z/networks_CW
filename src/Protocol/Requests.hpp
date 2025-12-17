@@ -29,4 +29,15 @@ namespace Protocol {
     struct SyncNoteRequest {
 //        Operation op;
     };
+
+    struct OpenNoteRequest {
+        uint32_t note_id;
+        uint32_t user_id;
+    };
+
+    struct UpdateTextRequest {
+        uint32_t user_id;
+        uint32_t note_id;
+        std::string text;
+    };
 }

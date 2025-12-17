@@ -17,15 +17,25 @@ QVariant NotesModel::data(const QModelIndex& index, int role) const {
     const auto& note = m_notes[index.row()];
 
     switch (role) {
-        case IdRole: return note.id;
+        case IdRole: return note.noteId;
         case TitleRole: return note.title;
         default: return {};
     }
 }
 
+QString NotesModel::getTitleById(int noteId) const {
+    for (const auto& note : m_notes) {
+        std::cout << "Title of note with id "<< noteId << note.title.toStdString()   << std::endl;
+        if (note.noteId == noteId) {
+            return note.title;
+        }
+    }
+    return QString();
+}
+
 QHash<int, QByteArray> NotesModel::roleNames() const {
     return {
-            { IdRole, "id" },
+            { IdRole, "noteId" },
             { TitleRole, "title" }
     };
 }

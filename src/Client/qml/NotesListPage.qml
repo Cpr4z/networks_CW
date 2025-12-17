@@ -41,7 +41,7 @@ ApplicationWindow {
                 radius: 4
 
                 Component.onCompleted: {
-                    console.log("Created delegate for note id:", id)
+                    console.log("Created delegate for note id:", noteId)
                 }
 
                 Text {
@@ -53,9 +53,9 @@ ApplicationWindow {
                 MouseArea {
                     anchors.fill: parent
                     onClicked: () => {
-                        console.log("Trying to open note with id", id);
-                        console.log("Trying to open note with id", delegateItem.id);
-                        notesManager.openNote(id);
+                        // console.log("Trying to open note with id", id);
+                        console.log("Trying to open note with id", noteId);
+                        notesManager.openNote(noteId);
                     }
                     // onClicked: notesManager.openNote(id)
                 }
@@ -82,7 +82,10 @@ ApplicationWindow {
     Connections {
         target: notesManager
 
-        function onNoteOpened(noteId, title, text) {
+        function onNoteOpened(noteId, text) {
+            var title = notesManager.model.getTitleById(noteId);
+            console.log("Opening editor for note:", noteId, "Title:", title);
+
             var component = Qt.createComponent("qrc:/qml/NoteEditor.qml")
             if (component.status === Component.Ready) {
                 var editor = component.createObject(window.contentItem, {
@@ -91,7 +94,17 @@ ApplicationWindow {
                     initialText: text
                 })
                 console.log("Editor created:", editor)
+            } else {
+                console.error("Failed to load NoteEditor component:", component.errorString())
             }
+        }
+
+        function onNoteOpenError(noteId, error) {
+            console.error("Failed to open note", noteId, ":", error)
+
+            // Показываем сообщение об ошибке
+            errorDialog.text = "Ошибка открытия заметки: " + error
+            errorDialog.open()
         }
     }
 }

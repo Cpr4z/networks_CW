@@ -5,7 +5,7 @@
 #include <vector>
 
 struct NoteItem {
-    int id;
+    int noteId;
     QString title;
 };
 
@@ -18,6 +18,7 @@ public:
         TitleRole
     };
 
+    Q_INVOKABLE QString getTitleById(int noteId) const;
     explicit NotesModel(QObject* parent = nullptr);
 
     // QAbstractListModel interface

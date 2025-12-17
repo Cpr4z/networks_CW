@@ -36,12 +36,16 @@ private:
     void handleGetNotesRequest(int client_fd, const std::vector<uint8_t>& buffer);
     void handleSyncRequest(int client_fd, const std::vector<uint8_t>& buffer);
     void handleCreateNoteRequest(int client_fd, const std::vector<uint8_t>& buffer);
+    void handleOpenNoteRequest(int client_fd, const std::vector<uint8_t>& buffer);
+    void handleUpdateTextRequest(int client_fd, const std::vector<uint8_t>& buffer);
 
     void sendAuthResponse(int client_fd, const Protocol::AuthResponse& response);
     void sendRegistrationResponse(int client_fd, const Protocol::RegistrationResponse& response);
     void sendGetNotesResponse(int client_fd, const Protocol::GetNotesResponse& response);
     void sendSyncResponse(int client_fd, const Protocol::SyncNoteResponse& response);
     void sendCreateNoteResponse(int client_fd, const Protocol::CreateNoteResponse& response);
+    void sendOpenNoteResponse(int client_fd, const Protocol::OpenNoteResponse& response);
+    void sendUpdateTextResponse(int client_fd, const Protocol::UpdateTextResponse& response);
 
 public:
     SyncServer(int port, const std::string& host);

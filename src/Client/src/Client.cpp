@@ -38,6 +38,17 @@ void NoteClient::sendRegistrationRequest(const QString& login, const QString& pa
     m_socket.write(reinterpret_cast<char*>(requestData.data()), requestData.size());
 }
 
+void NoteClient::sendUpdateTextRequest(uint32_t note_id, const QString& text) {
+//    uint32_t user_id;
+//    uint32_t note_id;
+//    std::string text;
+    Protocol::UpdateTextRequest req = { m_user_id, note_id, text.toStdString()};
+    std::cout << "User with id: " << m_user_id << std::endl;
+    std::cout << "Want to update note with id: " << note_id << std::endl;
+    std::vector<uint8_t> requestData = Protocol::encodeUpdateTextRequest(req);
+    m_socket.write(reinterpret_cast<char*>(requestData.data()), requestData.size());
+}
+
 void NoteClient::sendSyncRequest() {
 
 }
@@ -51,6 +62,14 @@ void NoteClient::sendCreateNoteRequest(const QString& title) {
     std::cout << "User who want to create note: " << m_user_id << std::endl;
     std::cout << "Note title: " << title.toStdString() << std::endl;
     std::vector<uint8_t> requestData = Protocol::encodeCreateNoteRequest(req);
+    m_socket.write(reinterpret_cast<char*>(requestData.data()), requestData.size());
+}
+
+void NoteClient::sendOpenNoteRequest(uint32_t note_id) {
+    Protocol::OpenNoteRequest req = {note_id, m_user_id};
+    std::cout << "User who want to create note: " << m_user_id << std::endl;
+    std::cout << "Note id: " << note_id << std::endl;
+    std::vector<uint8_t> requestData = Protocol::encodeOpenNoteRequest(req);
     m_socket.write(reinterpret_cast<char*>(requestData.data()), requestData.size());
 }
 
@@ -114,6 +133,40 @@ void NoteClient::handleCreateNoteResponse(const std::vector<uint8_t>& buffer) {
     }
 }
 
+void NoteClient::handleOpenNoteResponse(const std::vector<uint8_t>& buffer) {
+    const auto& response_opt = Protocol::decodeOpenNoteResponse(buffer);
+    if (response_opt.has_value()) {
+        const auto& response = response_opt.value();
+//        uint32_t note_id;
+//        std::string title;
+//        std::string text;
+        std::cout << "Opened note id is: " << response.note_id << std::endl;
+        std::cout << "Opened note title: " << response.title << std::endl;
+        std::cout << "Opened note text is: " << response.text << std::endl;
+        if (response.status == 0) {
+            emit noteOpenSuccess(response.note_id, response.text);
+        } else {
+            emit noteOpenFailed(response.note_id, "Не удалось открыть заметку");
+        }
+    }
+}
+
+void NoteClient::handleUpdateTextResponse(const std::vector<uint8_t>& buffer) {
+    const auto& response_opt = Protocol::decodeUpdateTextResponse(buffer);
+    if (response_opt.has_value()) {
+        const auto& response = response_opt.value();
+//        uint8_t status;
+//        uint32_t note_id;
+        std::cout << "Result of update text request: " << response.status << std::endl;
+        std::cout << "Id of update text note: " << response.note_id << std::endl;
+        if (response.status == 0) {
+            emit updateTextSuccess(response.note_id, m_user_id);
+        } else {
+            emit updateTextFailed("Ошибка во время редактирования заметки");
+        }
+    }
+}
+
 void NoteClient::onReadyRead() {
     while (m_socket.bytesAvailable() > 0) {
         std::cout << "Some bytes avaliable" << std::endl;
@@ -144,6 +197,16 @@ void NoteClient::onReadyRead() {
                 case Protocol::Operation::CREATE_NOTE:
                     std::cout << "Got create note response" << std::endl;
                     handleCreateNoteResponse(buffer);
+                    break;
+
+                case Protocol::Operation::OPEN_NOTE:
+                    std::cout << "Got open note response" << std::endl;
+                    handleOpenNoteResponse(buffer);
+                    break;
+
+                case Protocol::Operation::UPDATE_TEXT:
+                    std::cout << "Got update text response" << std::endl;
+                    handleUpdateTextResponse(buffer);
                     break;
 
                 default:

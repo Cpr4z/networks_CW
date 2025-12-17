@@ -62,6 +62,28 @@ void SyncServer::sendCreateNoteResponse(int client_fd, const Protocol::CreateNot
     }
 }
 
+void SyncServer::sendOpenNoteResponse(int client_fd, const Protocol::OpenNoteResponse& response) {
+    std::vector<uint8_t> response_buffer = Protocol::encodeOpenNoteResponse(response);
+    std::cout << "After data encoded for Note Response" << std::endl;
+    ssize_t sent = send(client_fd, response_buffer.data(), response_buffer.size(), 0);
+    if (sent < 0) {
+        perror("send");
+    } else {
+        std::cout << "Sent response to client " << client_fd << std::endl;
+    }
+}
+
+void SyncServer::sendUpdateTextResponse(int client_fd, const Protocol::UpdateTextResponse& response) {
+    std::vector<uint8_t> response_buffer = Protocol::encodeUpdateTextResponse(response);
+//    std::cout << "After data encoded for Note Response" << std::endl;
+    ssize_t sent = send(client_fd, response_buffer.data(), response_buffer.size(), 0);
+    if (sent < 0) {
+        perror("send");
+    } else {
+        std::cout << "Sent response to client " << client_fd << std::endl;
+    }
+}
+
 void SyncServer::handleAuthRequest(int client_fd, const std::vector<uint8_t>& buffer) {
     const auto& request = Protocol::decodeAuthRequest(buffer);
     std::cout << "Auth request from client " << client_fd << std::endl;
@@ -155,6 +177,47 @@ void SyncServer::handleCreateNoteRequest(int client_fd, const std::vector<uint8_
     sendCreateNoteResponse(client_fd, response);
 }
 
+void SyncServer::handleOpenNoteRequest(int client_fd, const std::vector<uint8_t>& buffer) {
+    const auto& request = Protocol::decodeOpenNoteRequest(buffer);
+
+    Protocol::OpenNoteResponse response;
+    response.op = Protocol::Operation::OPEN_NOTE;
+
+    if (m_repository->isNoteExists(request->user_id, request->note_id)) {
+        response.status = 0;
+        response.note_id = request->note_id;
+//        response.
+        response.text = m_repository->getNoteText(request->user_id, request->note_id);
+    } else {
+        response.status = 1;
+    }
+
+    // mock data for test
+//    {
+//        response.status = 0;
+//        response.note_id = 23;
+//        response.title = "new note";
+//        response.text = "some text in this note";
+//    }
+    sendOpenNoteResponse(client_fd, response);
+}
+
+void SyncServer::handleUpdateTextRequest(int client_fd, const std::vector<uint8_t>& buffer) {
+    const auto& request = Protocol::decodeUpdateTextRequest(buffer);
+    std::cout << "Update note request" << std::endl;
+    std::cout << "User with id - " << request->user_id << std::endl;
+    std::cout << "What to update note with id - " << request->note_id << std::endl;
+    Protocol::UpdateTextResponse response;
+    response.op = Protocol::Operation::UPDATE_TEXT;
+
+    // нужно делать проверку на конфликты, от этого будет зависеть статус
+    response.note_id = request->note_id;
+    response.status = 0;
+    m_repository->updateNoteText(request->note_id, request->user_id, request->text);
+
+    sendUpdateTextResponse(client_fd, response);
+}
+
 size_t SyncServer::getMessageLength(Protocol::Operation op,
                                     const std::vector<uint8_t>& buffer,
                                     size_t offset) {
@@ -191,6 +254,15 @@ size_t SyncServer::getMessageLength(Protocol::Operation op,
             std::cout << "Create note message size: " << 8 + titleLen << std::endl;
             return 8 + titleLen; // 2 (op) + 4 (user_id) + 2 (titleLen) + title;
         }
+        case Protocol::Operation::OPEN_NOTE: {
+            return 2 + 4 + 4;
+        }
+        case Protocol::Operation::UPDATE_TEXT: {
+            uint16_t textLen;
+            std::memcpy(&textLen, buffer.data() + offset + 2 + 4 + 4, sizeof(uint16_t));
+            std::cout << "Update note text message size: " << 2 + 4 + 4 + textLen << std::endl;
+            return 2 + 4 + 4 + textLen;
+        }
         default:
             std::cerr << "Unknown operation: " << static_cast<int>(op) << std::endl;
             return 2;  // Минимум код операции
@@ -221,6 +293,14 @@ void SyncServer::processClientMessage(int client_fd, const std::vector<uint8_t>&
             }
             case Protocol::Operation::CREATE_NOTE: {
                 handleCreateNoteRequest(client_fd, message);
+                break;
+            }
+            case Protocol::Operation::OPEN_NOTE: {
+                handleOpenNoteRequest(client_fd, message);
+                break;
+            }
+            case Protocol::Operation::UPDATE_TEXT: {
+                handleUpdateTextRequest(client_fd, message);
                 break;
             }
 

@@ -22,11 +22,17 @@ public:
 private slots:
 
     void onNoteCreationSuccess(const QString& title, uint32_t noteId);
-
     void onNoteCreationFailed(const QString& reason);
 
+    void onNoteOpenSuccess(uint32_t note_id, const std::string& text);
+    void onNoteOpenFailed(uint32_t note_id, const QString& reason);
+
+    void onUpdateTextSuccess(uint32_t note_id, uint32_t user_id);
+    void onUpdateTextFailed(const QString& reason);
+
 signals:
-    void noteOpened(int noteId, QString title, QString text);
+    void noteOpened(int note_id, const QString& text);
+    void noteOpenError(int noteId, const QString& error);
 
 private:
     NotesModel* m_model;

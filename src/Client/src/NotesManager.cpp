@@ -9,6 +9,10 @@ NotesManager::NotesManager(NoteClient* client, QObject* parent)
           m_userId(0) {
     connect(m_client, &NoteClient::noteCreationSuccess, this, &NotesManager::onNoteCreationSuccess);
     connect(m_client, &NoteClient::noteCreationFailed, this, &NotesManager::onNoteCreationFailed);
+    connect(m_client, &NoteClient::noteOpenSuccess, this, &NotesManager::onNoteOpenSuccess);
+    connect(m_client, &NoteClient::noteOpenFailed, this, &NotesManager::onNoteOpenFailed);
+    connect(m_client, &NoteClient::updateTextSuccess, this, &NotesManager::onUpdateTextSuccess);
+    connect(m_client, &NoteClient::updateTextFailed, this, &NotesManager::onUpdateTextFailed);
 }
 
 QAbstractListModel* NotesManager::model() const {
@@ -33,10 +37,31 @@ void NotesManager::onNoteCreationFailed(const QString& reason) {
     qWarning() << "Note creation failed:" << reason;
 }
 
+void NotesManager::onNoteOpenSuccess(uint32_t note_id, const std::string& text) {
+    emit noteOpened(note_id, QString::fromStdString(text));
+}
+
+void NotesManager::onNoteOpenFailed(uint32_t note_id, const QString& reason) {
+    qWarning() << "NotesManager::onNoteOpenFailed - ID:" << note_id
+               << "Reason:" << reason;
+
+    // Можно показать ошибку пользователю
+    emit noteOpenError(static_cast<int>(note_id), reason);
+}
+
+void NotesManager::onUpdateTextSuccess(uint32_t note_id, uint32_t user_id) {
+
+}
+
+void NotesManager::onUpdateTextFailed(const QString& reason) {
+
+}
+
 void NotesManager::openNote(int noteId) {
-//    std::cout << "NotesManager::openNote is called" << std::endl;
+    m_client->sendOpenNoteRequest(noteId);
 }
 
 void NotesManager::updateNote(int noteId, const QString& text) {
+    m_client->sendUpdateTextRequest(noteId, text);
 
 }
