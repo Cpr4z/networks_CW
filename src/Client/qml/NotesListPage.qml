@@ -215,7 +215,7 @@ ApplicationWindow {
                         // Кнопка открытия
                         Button {
                             text: "Открыть"
-                            onClicked: notesManager.openNote(noteId)
+                            onClicked: notesManager.openNote(noteId, localVersion)
 
                             background: Rectangle {
                                 color: parent.hovered ?
@@ -236,7 +236,7 @@ ApplicationWindow {
                         onClicked: () => {
                             // console.log("Trying to open note with id", id);
                             console.log("Trying to open note with id", noteId);
-                            notesManager.openNote(noteId);
+                            notesManager.openNote(noteId, localVersion);
                         }
 
                         onPressAndHold: {
@@ -263,7 +263,7 @@ ApplicationWindow {
                             text: "Поделиться со всеми"
                             onTriggered: {
                                 console.log("Sharing note:", noteId);
-                                notesManager.shareNoteWithEveryone(noteId);
+                                notesManager.shareNoteWithEveryone(noteId, localVersion);
                             }
                         }
 
@@ -377,7 +377,7 @@ ApplicationWindow {
     Connections {
         target: notesManager
 
-        function onNoteOpened(noteId, text) {
+        function onNoteOpened(noteId, version, text) {
             var title = notesManager.model.getTitleById(noteId);
             var isShared = notesManager.model.isNoteShared(noteId);
             // console.log("Opening note:", noteId, "Title:", title, "Shared:", notesManager.model.isSharedByIndex?.(noteId));
@@ -388,55 +388,13 @@ ApplicationWindow {
                     noteId: noteId,
                     initialTitle: title,
                     initialText: text,
-                    isNoteShared: isShared
+                    isNoteShared: isShared,
+                    localVersion: version
                 })
                 console.log("Editor created:", editor)
             } else {
                 console.error("Failed to load NoteEditor:", component.errorString())
             }
         }
-
-        // function onNoteShared(noteId) {
-        //     console.log("Note shared successfully:", noteId);
-        //     showToast("Заметка расшарена!");
-        // }
-        //
-        // function onSharedNotesLoaded() {
-        //     console.log("Shared notes loaded");
-        //     showToast("Общие заметки загружены");
-        // }
     }
-
-    // function showToast(message) {
-    //     toastText.text = message;
-    //     toastPopup.open();
-    // }
-    //
-    // // Toast-уведомление
-    // Popup {
-    //     id: toastPopup
-    //     anchors.bottom: parent.bottom
-    //     anchors.horizontalCenter: parent.horizontalCenter
-    //     width: 300
-    //     height: 60
-    //     opacity: 0.9
-    //
-    //     background: Rectangle {
-    //         color: "#333"
-    //         radius: 4
-    //     }
-    //
-    //     Text {
-    //         id: toastText
-    //         anchors.centerIn: parent
-    //         color: "white"
-    //         font.pixelSize: 14
-    //     }
-    //
-    //     Timer {
-    //         interval: 2000
-    //         running: toastPopup.visible
-    //         onTriggered: toastPopup.close()
-    //     }
-    // }
 }

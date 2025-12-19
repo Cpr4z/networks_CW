@@ -2,7 +2,11 @@
 
 #include <ranges>
 
-Note::Note(Id id, const std::string& title) : m_note_data({id, 0, title, {}, {}}) {
+Note::Note(Id id, const std::string& title) : m_note_data({id, 0, title, {}, 0, {},}) {
+}
+
+Note::Note(Id id, const std::string& title, const std::string& text) : m_note_data({id, 0, title, text, 0, {}}) {
+
 }
 
 void Note::addUser(const User& user) {
@@ -14,6 +18,10 @@ void Note::removeUser(Id user_id)
 //    std::erase_if(m_current_users, [user_id](const auto& user){
 //        return user->getId() == user_id;
 //    });
+}
+
+void Note::incrementVersion() {
+    m_note_data.version++;
 }
 
 // Запросы клиента

@@ -14,6 +14,9 @@ ApplicationWindow {
     property string initialTitle: ""
     property string initialText: ""
     property bool isNoteShared: false
+    property int localVersion: 0  // Локальная версия заметки
+    property int serverVersion: 0 // Версия на сервере
+    property bool conflictDetected: false // Флаг конфликта
 
     // Флаг изменений для предупреждения при закрытии
     property bool hasUnsavedChanges: false
@@ -27,7 +30,15 @@ ApplicationWindow {
     function saveNote() {
         if (noteId === -1) return
 
-        notesManager.updateNote(noteId, textArea.text)
+        if (localVersion < serverVersion) {
+            conflictDetected = true
+            conflictDialog.localContent = textArea.text
+            conflictDialog.serverVersion = serverVersion
+            conflictDialog.open()
+            return
+        }
+
+        notesManager.updateNote(noteId, textArea.text, localVersion)
         hasUnsavedChanges = false
 
         // Обновляем заголовок окна
@@ -239,7 +250,38 @@ ApplicationWindow {
 
         onAccepted: {
             console.log("Sharing note:", noteId);
-            notesManager.shareNoteWithEveryone(noteId);
+            notesManager.shareNoteWithEveryone(noteId, version);
+        }
+    }
+
+    ConflictDialog {
+        id: conflictDialog
+        noteId: noteWindow.noteId
+        noteTitle: titleField.text
+
+        onAcceptServer: {
+            // Пользователь выбрал принять серверную версию
+            conflictDetected = false
+            localVersion = serverVersion
+            textArea.text = conflictDialog.serverContent
+            hasUnsavedChanges = false
+        }
+
+        onOverwriteServer: {
+            // Пользователь выбрал перезаписать сервер
+            conflictDetected = false
+            localVersion++ // Увеличиваем версию
+            notesManager.forceUpdateNote(noteId, content, localVersion)
+            hasUnsavedChanges = false
+        }
+
+        onMergeManually: {
+            // Пользователь выбрал ручное слияние
+            conflictDetected = false
+            localVersion++ // Увеличиваем версию
+            textArea.text = content // Текст после ручного редактирования
+            notesManager.forceUpdateNote(noteId, content, localVersion)
+            hasUnsavedChanges = false
         }
     }
 
@@ -281,6 +323,31 @@ ApplicationWindow {
                 Layout.alignment: Qt.AlignHCenter
                 text: "OK"
                 onClicked: shareSuccessPopup.close()
+            }
+        }
+    }
+
+    Connections {
+        target: notesManager
+
+        // Когда приходит обновление от сервера
+        onServerVersionChanged: function(noteId, content, version, sender) {
+            if (noteId !== noteWindow.noteId) return
+
+            serverVersion = version
+
+            if (!conflictDetected) {
+                if (localVersion < serverVersion && hasUnsavedChanges) {
+                    // Активный конфликт - показываем диалог
+                    conflictDialog.localContent = textArea.text
+                    conflictDialog.serverContent = content
+                    conflictDialog.serverVersion = version
+                    conflictDialog.open()
+                } else if (localVersion < serverVersion) {
+                    // Просто обновляем, если нет локальных изменений
+                    textArea.text = content
+                    localVersion = serverVersion
+                }
             }
         }
     }

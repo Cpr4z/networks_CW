@@ -38,11 +38,8 @@ void NoteClient::sendRegistrationRequest(const QString& login, const QString& pa
     m_socket.write(reinterpret_cast<char*>(requestData.data()), requestData.size());
 }
 
-void NoteClient::sendUpdateTextRequest(uint32_t note_id, const QString& text) {
-//    uint32_t user_id;
-//    uint32_t note_id;
-//    std::string text;
-    Protocol::UpdateTextRequest req = { m_user_id, note_id, text.toStdString()};
+void NoteClient::sendUpdateTextRequest(uint32_t note_id, const QString& text, uint32_t version) {
+    Protocol::UpdateTextRequest req = { m_user_id, note_id, version, text.toStdString()};
     std::cout << "User with id: " << m_user_id << std::endl;
     std::cout << "Want to update note with id: " << note_id << std::endl;
     std::cout << "New text of note is: " << text.toStdString() << std::endl;
@@ -68,7 +65,7 @@ void NoteClient::sendCreateNoteRequest(const QString& title) {
     m_socket.write(reinterpret_cast<char*>(requestData.data()), requestData.size());
 }
 
-void NoteClient::sendOpenNoteRequest(uint32_t note_id) {
+void NoteClient::sendOpenNoteRequest(uint32_t note_id, uint32_t version) {
     Protocol::OpenNoteRequest req = {note_id, m_user_id};
     std::cout << "User who want to open note: " << m_user_id << std::endl;
     std::cout << "Note id: " << note_id << std::endl;
@@ -76,7 +73,7 @@ void NoteClient::sendOpenNoteRequest(uint32_t note_id) {
     m_socket.write(reinterpret_cast<char*>(requestData.data()), requestData.size());
 }
 
-void NoteClient::sendShareNoteRequest(uint32_t note_id) {
+void NoteClient::sendShareNoteRequest(uint32_t note_id, uint32_t version) {
     Protocol::ShareNoteRequest req = {m_user_id, note_id};
     std::cout << "User with id - " << m_user_id << " want to share note with id - " << note_id << std::endl;
     std::vector<uint8_t> requestData = Protocol::encodeShareNoteRequest(req);
@@ -136,7 +133,7 @@ void NoteClient::handleCreateNoteResponse(const std::vector<uint8_t>& buffer) {
         std::cout << "Id of created note: " << response.note_id << std::endl;
         std::cout << "Title of new note is: " << response.note_title << std::endl;
         if (response.status == 0) {
-            emit noteCreationSuccess(QString::fromStdString(response.note_title), response.note_id, m_user_id);
+            emit noteCreationSuccess(QString::fromStdString(response.note_title), response.note_id, m_user_id, response.version);
         } else {
             emit noteCreationFailed("Заметка с таким именем уже существует");
         }
@@ -154,7 +151,7 @@ void NoteClient::handleOpenNoteResponse(const std::vector<uint8_t>& buffer) {
         std::cout << "Opened note title: " << response.title << std::endl;
         std::cout << "Opened note text is: " << response.text << std::endl;
         if (response.status == 0) {
-            emit noteOpenSuccess(response.note_id, QString::fromStdString(response.text));
+            emit noteOpenSuccess(response.note_id, response.version, QString::fromStdString(response.text));
         } else {
             emit noteOpenFailed(response.note_id, "Не удалось открыть заметку");
         }
@@ -189,7 +186,7 @@ void NoteClient::handleShareNoteNotifyRequest(const std::vector<uint8_t>& buffer
         std::cout << request.note_title << std::endl;
 //        std::cout << request.note_text << std::endl;
 
-        emit createSharedNote(request.note_id, QString::fromStdString(request.note_title), request.owner_id);
+        emit createSharedNote(request.note_id, QString::fromStdString(request.note_title), request.owner_id, request.version);
 
     }
 }

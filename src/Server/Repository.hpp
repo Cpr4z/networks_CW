@@ -31,6 +31,8 @@ public:
 
     void shareNoteToAllUsers(uint32_t owner_id, uint32_t note_id);
 
+    bool isContainsConflict(uint32_t user_id, uint32_t note_id, uint32_t version);
+
     // title, text
     std::pair<std::string, std::string> getNoteInfo(uint32_t note_id, uint32_t user_id);
 

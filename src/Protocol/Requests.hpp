@@ -33,11 +33,13 @@ namespace Protocol {
     struct OpenNoteRequest {
         uint32_t note_id;
         uint32_t user_id;
+        uint32_t version;
     };
 
     struct UpdateTextRequest {
         uint32_t user_id;
         uint32_t note_id;
+        uint32_t version;
         std::string text;
     };
 
@@ -50,6 +52,7 @@ namespace Protocol {
         Operation op;
         uint32_t note_id;
         uint32_t owner_id;
+        uint32_t version;
         std::string note_title;
 //        std::string note_text;
     };

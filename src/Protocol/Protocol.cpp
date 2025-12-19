@@ -367,7 +367,7 @@ namespace Protocol {
         const uint16_t titleLen = static_cast<uint16_t>(resp.note_title.size());
 
         // 2 (op) + 1 (status) + 4 (note_id) + 2 (titleLen) + title
-        std::vector<uint8_t> buffer(2 + 1 + 4 + 2 + titleLen);
+        std::vector<uint8_t> buffer(2 + 1 + 4 + 4 + 2 + titleLen);
         uint8_t* ptr = buffer.data();
 
         uint16_t op = static_cast<uint16_t>(resp.op);
@@ -377,9 +377,11 @@ namespace Protocol {
         std::memcpy(ptr, &resp.status, sizeof(resp.status));
         ptr += sizeof(resp.status);
 
-//        uint32_t noteId = resp.note_id;
         std::memcpy(ptr, &resp.note_id, sizeof(resp.note_id));
         ptr += sizeof(resp.note_id);
+
+        std::memcpy(ptr, &resp.version, sizeof(resp.version));
+        ptr += sizeof(resp.version);
 
         uint16_t titleLenNet = titleLen;
         std::memcpy(ptr, &titleLenNet, sizeof(titleLenNet));
@@ -467,7 +469,7 @@ namespace Protocol {
     }
 
     std::optional<CreateNoteResponse> decodeCreateNoteResponse(const std::vector<uint8_t>& buffer) {
-        if (buffer.size() < 2 + 1 + 4 + 2)
+        if (buffer.size() < 2 + 1 + 4 + 4 + 2)
             return std::nullopt;
 
         CreateNoteResponse resp{};
@@ -489,6 +491,10 @@ namespace Protocol {
         std::memcpy(&resp.note_id, ptr, sizeof(resp.note_id));
 //        resp.note_id = ntohl(noteId);
         ptr += sizeof(resp.note_id);
+
+        // version
+        std::memcpy(&resp.version, ptr, sizeof(resp.version));
+        ptr += sizeof(resp.version);
 
         // 4. Title length
         uint16_t titleLen;
@@ -532,8 +538,8 @@ namespace Protocol {
         uint32_t title_len = static_cast<uint32_t>(resp.title.size());
         uint32_t text_len = static_cast<uint32_t>(resp.text.size());
 
-        // 2(op) + 1(status) + 4(note_id) + 4(title_len) + 4(text_len) + title + text
-        std::vector<uint8_t> buffer(2 + 1 + 4 + 4 + 4 + title_len + text_len);
+        // 2(op) + 1(status) + 4(note_id) + 4(version) + 4(title_len) + 4(text_len) + title + text
+        std::vector<uint8_t> buffer(2 + 1 + 4 + 4 + 4 + 4 + title_len + text_len);
         uint8_t* ptr = buffer.data();
 
         // Код операции
@@ -548,6 +554,10 @@ namespace Protocol {
         // ID заметки
         std::memcpy(ptr, &resp.note_id, sizeof(resp.note_id));
         ptr += sizeof(resp.note_id);
+
+        // Version
+        std::memcpy(ptr, &resp.version, sizeof(resp.version));
+        ptr += sizeof(resp.version);
 
         // Длина заголовка
         std::memcpy(ptr, &title_len, sizeof(title_len));
@@ -604,7 +614,7 @@ namespace Protocol {
     }
 
     std::optional<OpenNoteResponse> decodeOpenNoteResponse(const std::vector<uint8_t>& buffer) {
-        constexpr size_t MIN_SIZE = 2 + 1 + 4 + 4 + 4; // op + status + note_id + title_len + text_len
+        constexpr size_t MIN_SIZE = 2 + 1 + 4 + 4 + 4 + 4; // op + status + note_id + title_len + text_len
 
         if (buffer.size() < MIN_SIZE) {
             return std::nullopt;
@@ -631,6 +641,10 @@ namespace Protocol {
         // ID заметки
         std::memcpy(&resp.note_id, ptr, sizeof(resp.note_id));
         ptr += sizeof(resp.note_id);
+
+        // Version
+        std::memcpy(&resp.version, ptr, sizeof(resp.version));
+        ptr += sizeof(resp.version);
 
         // Длина заголовка
         uint32_t title_len;
@@ -668,8 +682,8 @@ namespace Protocol {
         std::string text = req.text;
         uint32_t text_len = static_cast<uint32_t>(text.size());
 
-        // 2(op) + 4(user_id) + 4(note_id) + 4(text_len) + text
-        std::vector<uint8_t> buffer(2 + 4 + 4 + 4 + text_len);
+        // 2(op) + 4(user_id) + 4(note_id) + 4(version) + 4(text_len) + text
+        std::vector<uint8_t> buffer(2 + 4 + 4 + 4 + 4 + text_len);
         uint8_t* ptr = buffer.data();
 
         // Код операции
@@ -678,16 +692,20 @@ namespace Protocol {
         ptr += sizeof(op);
 
         // user_id
-        std::memcpy(ptr, &req.user_id, sizeof(uint32_t));
-        ptr += sizeof(uint32_t);
+        std::memcpy(ptr, &req.user_id, sizeof(req.user_id));
+        ptr += sizeof(req.user_id);
 
 //        uint32_t user_id_net = htonl(req.user_id);
 //        std::memcpy(ptr, &user_id_net, sizeof(user_id_net));
 //        ptr += sizeof(user_id_net);
 
         // note_id
-        std::memcpy(ptr, &req.note_id, sizeof(uint32_t));
-        ptr += sizeof(uint32_t);
+        std::memcpy(ptr, &req.note_id, sizeof(req.note_id));
+        ptr += sizeof(req.note_id);
+
+        // version
+        std::memcpy(ptr, &req.version, sizeof(req.version));
+        ptr += sizeof(req.version);
 
         // Длина текста
         std::memcpy(ptr, &text_len, sizeof(text_len));
@@ -744,17 +762,21 @@ namespace Protocol {
         UpdateTextRequest req;
 
         // user_id
-        std::memcpy(&req.user_id, ptr, sizeof(uint32_t));
-        ptr += sizeof(uint32_t);
+        std::memcpy(&req.user_id, ptr, sizeof(req.user_id));
+        ptr += sizeof(req.user_id);
 
         // note_id
-        std::memcpy(&req.note_id, ptr, sizeof(uint32_t));
-        ptr += sizeof(uint32_t);
+        std::memcpy(&req.note_id, ptr, sizeof(req.note_id));
+        ptr += sizeof(req.note_id);
+
+        // version
+        std::memcpy(&req.version, ptr, sizeof(req.version));
+        ptr += sizeof(req.version);
 
         // Длина текста
         uint32_t text_len;
-        std::memcpy(&text_len, ptr, sizeof(uint32_t));
-        ptr += sizeof(uint32_t);
+        std::memcpy(&text_len, ptr, sizeof(text_len));
+        ptr += sizeof(text_len);
 
         // Проверяем размер
 //        if (buffer.size() < MIN_SIZE + text_len) {
@@ -871,7 +893,7 @@ namespace Protocol {
 //        std::cout << req.note_text << "Size of text is: " << text_len << std::endl;
 
         // 4(note_id) + 4(owner_id) + 4(title_len) + title + 4(text_len) + text
-        std::vector<uint8_t> buffer(2 + 4 + 4 + 4 + title_len);
+        std::vector<uint8_t> buffer(2 + 4 + 4 + 4 + 4 + title_len);
         uint8_t* ptr = buffer.data();
 
         // op - 2
@@ -885,6 +907,10 @@ namespace Protocol {
         // owner_id - 4
         std::memcpy(ptr, &req.owner_id, sizeof(req.owner_id));
         ptr += sizeof(req.owner_id);
+
+        // version
+        std::memcpy(ptr, &req.version, sizeof(req.version));
+        ptr += sizeof(req.version);
 
         // Длина заголовка - 4
         std::memcpy(ptr, &title_len, sizeof(title_len));
@@ -936,6 +962,9 @@ namespace Protocol {
         // owner_id
         std::memcpy(&req.owner_id, ptr, sizeof(req.owner_id));
         ptr += sizeof(req.owner_id);
+
+        std::memcpy(&req.version, ptr, sizeof(req.version));
+        ptr += sizeof(req.version);
 
         // Длина заголовка
         uint32_t title_len;

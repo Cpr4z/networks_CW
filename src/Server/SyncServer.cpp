@@ -237,10 +237,14 @@ void SyncServer::handleUpdateTextRequest(int client_fd, const std::vector<uint8_
     response.op = Protocol::Operation::UPDATE_TEXT;
 
     // нужно делать проверку на конфликты, от этого будет зависеть статус
-    response.note_id = request->note_id;
-    response.status = 0;
-    m_repository->updateNoteText(request->note_id, request->user_id, request->text);
-
+    // uint32_t user_id, uint32_t note_id, uint32_t version
+    if (m_repository->isContainsConflict(request->user_id, request->note_id, request->version)) {
+        response.status = 1; // есть конфликты при обновлении
+    } else {
+        response.note_id = request->note_id;
+        response.status = 0;
+        m_repository->updateNoteText(request->note_id, request->user_id, request->text);
+    }
     sendUpdateTextResponse(client_fd, response);
 }
 

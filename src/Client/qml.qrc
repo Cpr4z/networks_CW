@@ -4,5 +4,6 @@
         <file>qml/NoteEditor.qml</file>
         <file>qml/LoginPage.qml</file>
         <file>qml/NotesListPage.qml</file>
+        <file>qml/ConflictDialog.qml</file>
     </qresource>
 </RCC>

@@ -23,9 +23,9 @@ public:
     void sendSyncRequest();
     void sendGetNotesRequest(); // user_id
     void sendCreateNoteRequest(const QString& title); // user_id
-    void sendOpenNoteRequest(uint32_t note_id);
-    void sendUpdateTextRequest(uint32_t note_id, const QString& text);
-    void sendShareNoteRequest(uint32_t note_id);
+    void sendOpenNoteRequest(uint32_t note_id, uint32_t version);
+    void sendUpdateTextRequest(uint32_t note_id, const QString& text, uint32_t version);
+    void sendShareNoteRequest(uint32_t note_id, uint32_t version);
 
     void setUsername(const QString& username) { m_username = username; }
 
@@ -39,18 +39,18 @@ signals:
     void registrationFailed(const QString& reason);
 
     // CREATE_NOTE
-    void noteCreationSuccess(const QString& title, uint32_t noteId, uint32_t ownerId);
+    void noteCreationSuccess(const QString& title, uint32_t noteId, uint32_t ownerId, uint32_t version);
     void noteCreationFailed(const QString& reason);
 
     // OPEN_NOTE
-    void noteOpenSuccess(uint32_t note_id, const QString& text);
+    void noteOpenSuccess(uint32_t note_id, uint32_t version, const QString& text);
     void noteOpenFailed(uint32_t note_id, const QString& reason);
 
     // UPDATE_TEXT
     void updateTextSuccess(uint32_t note_id, uint32_t user_id);
     void updateTextFailed(const QString& reason);
 
-    void createSharedNote(uint32_t note_id, const QString& title, uint32_t user_id);
+    void createSharedNote(uint32_t note_id, const QString& title, uint32_t user_id, uint32_t version);
 
 
 private slots:

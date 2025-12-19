@@ -30,16 +30,16 @@ void NotesManager::createNote(const QString& title) {
     m_client->sendCreateNoteRequest(title);
 }
 
-void NotesManager::onNoteCreationSuccess(const QString& title, uint32_t noteId, uint32_t ownerId) {
-    m_model->addPersonalNote(static_cast<int>(noteId), title, ownerId);
+void NotesManager::onNoteCreationSuccess(const QString& title, uint32_t noteId, uint32_t ownerId, uint32_t version) {
+    m_model->addPersonalNote(static_cast<int>(noteId), title, ownerId, version);
 }
 
 void NotesManager::onNoteCreationFailed(const QString& reason) {
     qWarning() << "Note creation failed:" << reason;
 }
 
-void NotesManager::onNoteOpenSuccess(uint32_t note_id, const QString& text) {
-    emit noteOpened(note_id, text);
+void NotesManager::onNoteOpenSuccess(uint32_t note_id, uint32_t version, const QString& text) {
+    emit noteOpened(note_id, version, text);
 }
 
 void NotesManager::onNoteOpenFailed(uint32_t note_id, const QString& reason) {
@@ -58,18 +58,18 @@ void NotesManager::onUpdateTextFailed(const QString& reason) {
 
 }
 
-void NotesManager::openNote(int noteId) {
-    m_client->sendOpenNoteRequest(noteId);
+void NotesManager::openNote(int noteId, int version) {
+    m_client->sendOpenNoteRequest(noteId, version);
 }
 
-void NotesManager::updateNote(int noteId, const QString& text) {
-    m_client->sendUpdateTextRequest(noteId, text);
+void NotesManager::updateNote(int noteId, const QString& text, int version) {
+    m_client->sendUpdateTextRequest(noteId, text, version);
 }
 
-void NotesManager::shareNoteWithEveryone(int noteId) {
-    m_client->sendShareNoteRequest(noteId);
+void NotesManager::shareNoteWithEveryone(int noteId, int version) {
+    m_client->sendShareNoteRequest(noteId, version);
 }
 
-void NotesManager::onShareNoteNotification(uint32_t note_id, const QString& title, uint32_t owner_id) {
-    m_model->addSharedNote(note_id, title, owner_id);
+void NotesManager::onShareNoteNotification(uint32_t note_id, const QString& title, uint32_t owner_id, uint32_t version) {
+    m_model->addSharedNote(note_id, title, owner_id, version);
 }

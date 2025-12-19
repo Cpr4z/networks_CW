@@ -21,6 +21,7 @@ QVariant NotesModel::data(const QModelIndex& index, int role) const {
         case TitleRole: return note.title;
         case IsSharedRole: return note.isShared;
         case OwnerIdRole: return note.ownerId;
+        case VersionRole: return note.version;
         default: return {};
     }
 }
@@ -44,17 +45,17 @@ QHash<int, QByteArray> NotesModel::roleNames() const {
     };
 }
 
-void NotesModel::addPersonalNote(int id, const QString& title, int ownerId) {
+void NotesModel::addPersonalNote(int id, const QString& title, int ownerId, int version) {
     const int row = m_notes.size();
     beginInsertRows(QModelIndex(), row, row);
-    m_notes.push_back({ id, title, false, ownerId });
+    m_notes.push_back({ id, title, false, ownerId, version });
     endInsertRows();
 }
 
-void NotesModel::addSharedNote(int id, const QString& title, int ownerId) {
+void NotesModel::addSharedNote(int id, const QString& title, int ownerId, int version) {
     const int row = m_notes.size();
     beginInsertRows(QModelIndex(), row, row);
-    m_notes.push_back({ id, title, true, ownerId });
+    m_notes.push_back({ id, title, true, ownerId, version });
     endInsertRows();
 }
 
@@ -80,7 +81,3 @@ bool NotesModel::isNoteShared(int noteId) const {
     }
     return false;
 }
-
-//QString NotesModel::getSection(int index) const {
-//
-//}

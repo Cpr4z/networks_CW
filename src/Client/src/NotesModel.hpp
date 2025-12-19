@@ -9,6 +9,7 @@ struct NoteItem {
     QString title;
     bool isShared = false;
     int ownerId = 0;
+    int version = 0;
 };
 
 class NotesModel : public QAbstractListModel {
@@ -20,13 +21,13 @@ public:
         TitleRole,
         IsSharedRole,
         OwnerIdRole,
+        VersionRole,
     };
 
     Q_INVOKABLE QString getTitleById(int noteId) const;
     Q_INVOKABLE int personalNotesCount() const;
     Q_INVOKABLE int sharedNotesCount() const;
     Q_INVOKABLE bool isNoteShared(int noteId) const;
-//    Q_INVOKABLE QString getSection(int index) const;
 
 
     explicit NotesModel(QObject* parent = nullptr);
@@ -37,8 +38,8 @@ public:
     QHash<int, QByteArray> roleNames() const override;
 
     // API
-    void addPersonalNote(int id, const QString& title, int ownerId);
-    void addSharedNote(int id, const QString& title, int ownerId);
+    void addPersonalNote(int id, const QString& title, int ownerId, int version);
+    void addSharedNote(int id, const QString& title, int ownerId, int version);
     const NoteItem& noteAt(int row) const;
 
 private:

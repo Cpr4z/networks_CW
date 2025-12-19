@@ -122,6 +122,7 @@ void Repository::updateNoteText(uint32_t note_id, uint32_t user_id, const std::s
         return;
     }
 
+    (*note)->incrementVersion();
     (*note)->setText(text);
 }
 
@@ -178,22 +179,39 @@ void Repository::shareNoteToAllUsers(uint32_t owner_id, uint32_t note_id) {
                 note_already_exists = true;
                 break;
             }
-//            if (note_ptr->getTitle() == title && note_ptr->getText() == text) {
-//                note_already_exists = true;
-//                break;
-//            }
         }
 
         // Если заметки еще нет, добавляем ее
         if (!note_already_exists) {
             // Создаем новую заметку для текущего пользователя
-//            const uint32_t new_note_id = ++m_notes_count;
-            auto new_note = std::make_shared<Note>(note_id, title);
-            new_note->setText(text);
-            notes_vector.emplace_back(new_note);
+            notes_vector.emplace_back(std::make_shared<Note>(note_id, title, text));
 
             std::cout << "Shared note '" << title << "' to user with id: "
                       << current_user_id << std::endl;
         }
     }
+}
+
+bool Repository::isContainsConflict(uint32_t user_id, uint32_t note_id, uint32_t version) {
+    auto user = std::ranges::find_if(m_notes_map, [&](const auto& item){
+        return item.first->getId() == user_id;
+    });
+
+    if (user == m_notes_map.end()) {
+        std::cerr << "Error while checking conflicts about note with id: " << note_id << std::endl;
+        std::cerr << "with version: " << version << std::endl;
+        std::cerr << "from user with id: " << user_id << std::endl;
+        return false;
+    }
+
+    auto note = std::ranges::find_if(user->second, [&](const auto& item){
+        return item->getId() == note_id;
+    });
+
+    if (note == user->second.end()) {
+        std::cerr << "Error while updating note text with id - " << note_id << " for user with id - " << user_id << std::endl;
+        return false;
+    }
+
+    return (*note)->getVersion() != version;
 }
