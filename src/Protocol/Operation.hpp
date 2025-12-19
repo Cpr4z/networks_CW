@@ -24,6 +24,8 @@ namespace Protocol {
         CREATE_NOTE = 0x0005,
         OPEN_NOTE = 0x0006,
         UPDATE_TEXT = 0x0007,
+        SHARE_NOTE = 0x0008,
+        SHARE_NOTE_NOTIFY = 0x0009,
         INSERT,
         DELETE,
         UPDATE,

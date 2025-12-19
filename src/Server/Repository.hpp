@@ -21,9 +21,6 @@ public:
         return repo;
     }
 
-//    bool isUserExists(const std::string& login);
-
-//    void addUser(int user_id, const std::string& login, const std::string& password);
     uint32_t addUser(const std::string& login, const std::string& password);
     std::expected<uint32_t, AuthError> validateUser(const std::string& login, const std::string& password);
     uint32_t addNote(uint32_t user_id, const std::string& title);
@@ -31,10 +28,13 @@ public:
     bool isNoteExists(uint32_t user_id, uint32_t note_id);
     std::string getNoteText(uint32_t user_id, uint32_t note_id);
     void updateNoteText(uint32_t note_id, uint32_t user_id, const std::string& text);
-//    void addDocument(int user_id, const std::string& name);
+
+    void shareNoteToAllUsers(uint32_t owner_id, uint32_t note_id);
+
+    // title, text
+    std::pair<std::string, std::string> getNoteInfo(uint32_t note_id, uint32_t user_id);
 
 private:
-//    Users m_users;
     int m_users_count = 0;
     int m_notes_count = 0;
     UsersMap m_users_map;

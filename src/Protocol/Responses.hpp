@@ -44,4 +44,11 @@ namespace Protocol {
         uint8_t status;
         uint32_t note_id;
     };
+
+    struct ShareNoteResponse {
+
+    };
+
+    struct ShareNoteNotifyResponse {
+    };
 }

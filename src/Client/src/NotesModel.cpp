@@ -19,6 +19,8 @@ QVariant NotesModel::data(const QModelIndex& index, int role) const {
     switch (role) {
         case IdRole: return note.noteId;
         case TitleRole: return note.title;
+        case IsSharedRole: return note.isShared;
+        case OwnerIdRole: return note.ownerId;
         default: return {};
     }
 }
@@ -36,18 +38,49 @@ QString NotesModel::getTitleById(int noteId) const {
 QHash<int, QByteArray> NotesModel::roleNames() const {
     return {
             { IdRole, "noteId" },
-            { TitleRole, "title" }
+            { TitleRole, "title" },
+            { IsSharedRole, "isShared"},
+            { OwnerIdRole, "ownerId"}
     };
 }
 
-void NotesModel::addNote(int id, const QString& title) {
+void NotesModel::addPersonalNote(int id, const QString& title, int ownerId) {
     const int row = m_notes.size();
     beginInsertRows(QModelIndex(), row, row);
-    m_notes.push_back({ id, title });
-//    std::cout << m_notes.size() << " " << this <<  std::endl;
+    m_notes.push_back({ id, title, false, ownerId });
+    endInsertRows();
+}
+
+void NotesModel::addSharedNote(int id, const QString& title, int ownerId) {
+    const int row = m_notes.size();
+    beginInsertRows(QModelIndex(), row, row);
+    m_notes.push_back({ id, title, true, ownerId });
     endInsertRows();
 }
 
 const NoteItem& NotesModel::noteAt(int row) const {
     return m_notes.at(row);
 }
+
+int NotesModel::personalNotesCount() const {
+    return std::count_if(m_notes.begin(), m_notes.end(),
+                         [](const NoteItem& note) { return !note.isShared; });
+}
+
+int NotesModel::sharedNotesCount() const {
+    return std::count_if(m_notes.begin(), m_notes.end(),
+                         [](const NoteItem& note) { return note.isShared; });
+}
+
+bool NotesModel::isNoteShared(int noteId) const {
+    for (const auto& note : m_notes) {
+        if (note.noteId == noteId) {
+            return note.isShared;
+        }
+    }
+    return false;
+}
+
+//QString NotesModel::getSection(int index) const {
+//
+//}

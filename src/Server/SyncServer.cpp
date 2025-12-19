@@ -11,6 +11,20 @@ SyncServer::~SyncServer() {
     stop();
 }
 
+void SyncServer::broadcastToAllClients(int client_fd_, const std::vector<uint8_t>& data) {
+    std::lock_guard<std::mutex> lock(m_clients_mutex);
+    for (int client_fd : m_connected_clients) {
+        if (client_fd != client_fd_) {
+            ssize_t sent = send(client_fd, data.data(), data.size(), 0);
+            if (sent < 0) {
+                perror("broadcast send");
+            } else {
+                std::cout << "  Sent to client " << client_fd << std::endl;
+            }
+        }
+    }
+}
+
 void SyncServer::sendAuthResponse(int client_fd, const Protocol::AuthResponse& response) {
     std::vector<uint8_t> response_buffer = Protocol::encodeAuthResponse(response);
     ssize_t sent = send(client_fd, response_buffer.data(), response_buffer.size(), 0);
@@ -82,6 +96,15 @@ void SyncServer::sendUpdateTextResponse(int client_fd, const Protocol::UpdateTex
     } else {
         std::cout << "Sent response to client " << client_fd << std::endl;
     }
+}
+
+void SyncServer::sendShareNoteResponse(int client_fd, const Protocol::ShareNoteResponse& response) {
+
+}
+
+void SyncServer::sendShareNoteNotifyRequest(int client_fd, const Protocol::ShareNoteNotifyRequest& request) {
+    std::vector<uint8_t> notify_buffer = Protocol::encodeShareNoteNotifyRequest(request);
+    broadcastToAllClients(client_fd, notify_buffer);
 }
 
 void SyncServer::handleAuthRequest(int client_fd, const std::vector<uint8_t>& buffer) {
@@ -184,11 +207,13 @@ void SyncServer::handleOpenNoteRequest(int client_fd, const std::vector<uint8_t>
     response.op = Protocol::Operation::OPEN_NOTE;
 
     if (m_repository->isNoteExists(request->user_id, request->note_id)) {
+        std::cout << "Note exits when trying to open note" << std::endl;
         response.status = 0;
         response.note_id = request->note_id;
 //        response.
         response.text = m_repository->getNoteText(request->user_id, request->note_id);
     } else {
+        std::cout << "Note doesn't exist when trying to open note" << std::endl;
         response.status = 1;
     }
 
@@ -207,6 +232,7 @@ void SyncServer::handleUpdateTextRequest(int client_fd, const std::vector<uint8_
     std::cout << "Update note request" << std::endl;
     std::cout << "User with id - " << request->user_id << std::endl;
     std::cout << "What to update note with id - " << request->note_id << std::endl;
+    std::cout << "New text for this note is: " << request->text << std::endl;
     Protocol::UpdateTextResponse response;
     response.op = Protocol::Operation::UPDATE_TEXT;
 
@@ -216,6 +242,30 @@ void SyncServer::handleUpdateTextRequest(int client_fd, const std::vector<uint8_
     m_repository->updateNoteText(request->note_id, request->user_id, request->text);
 
     sendUpdateTextResponse(client_fd, response);
+}
+
+void SyncServer::handleShareNoteRequest(int client_fd, const std::vector<uint8_t>& buffer) {
+    const auto& req = Protocol::decodeShareNoteRequest(buffer);
+    std::cout << "User with id: " << req->user_id << std::endl;
+    std::cout << "What to share note with id: " << req->note_id << std::endl;
+
+    m_repository->shareNoteToAllUsers(req->user_id, req->note_id);
+
+    Protocol::ShareNoteNotifyRequest request;
+    request.op = Protocol::Operation::SHARE_NOTE_NOTIFY;
+    request.note_id = req->note_id;
+    request.owner_id = req->user_id;
+
+    const auto& note_info = m_repository->getNoteInfo(req->note_id, req->user_id);
+
+    request.note_title = note_info.first;
+    // здесь нужно найти заметку у пользователя и расшарить их в репозитории для пользователей
+
+
+    sendShareNoteNotifyRequest(client_fd, request);
+}
+
+void SyncServer::handleShareNoteNotifyRequest(int client_fd, const std::vector<uint8_t>& buffer) {
 }
 
 size_t SyncServer::getMessageLength(Protocol::Operation op,
@@ -258,10 +308,13 @@ size_t SyncServer::getMessageLength(Protocol::Operation op,
             return 2 + 4 + 4;
         }
         case Protocol::Operation::UPDATE_TEXT: {
-            uint16_t textLen;
-            std::memcpy(&textLen, buffer.data() + offset + 2 + 4 + 4, sizeof(uint16_t));
-            std::cout << "Update note text message size: " << 2 + 4 + 4 + textLen << std::endl;
-            return 2 + 4 + 4 + textLen;
+            uint32_t textLen;
+            std::memcpy(&textLen, buffer.data() + offset + 2 + 4 + 4, sizeof(uint32_t));
+            std::cout << "Update note text message size: " << 2 + 4 + 4 + 4 + textLen << std::endl;
+            return 2 + 4 + 4 + 4 + textLen;
+        }
+        case Protocol::Operation::SHARE_NOTE: {
+            return 2 + 4 + 4;
         }
         default:
             std::cerr << "Unknown operation: " << static_cast<int>(op) << std::endl;
@@ -301,6 +354,10 @@ void SyncServer::processClientMessage(int client_fd, const std::vector<uint8_t>&
             }
             case Protocol::Operation::UPDATE_TEXT: {
                 handleUpdateTextRequest(client_fd, message);
+                break;
+            }
+            case Protocol::Operation::SHARE_NOTE: {
+                handleShareNoteRequest(client_fd, message);
                 break;
             }
 
@@ -373,6 +430,11 @@ void SyncServer::processClientMessages(int client_fd) {
 
 void SyncServer::handleClient(int client_fd) {
     std::cout << "New client connected: " << client_fd << std::endl;
+
+    {
+        std::lock_guard<std::mutex> lock(m_clients_mutex);
+        m_connected_clients.insert(client_fd);
+    }
 
     try {
         processClientMessages(client_fd);  // ← ИСПОЛЬЗУЕМ processClientMessages

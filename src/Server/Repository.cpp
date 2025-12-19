@@ -124,3 +124,76 @@ void Repository::updateNoteText(uint32_t note_id, uint32_t user_id, const std::s
 
     (*note)->setText(text);
 }
+
+std::pair<std::string, std::string> Repository::getNoteInfo(uint32_t note_id, uint32_t user_id) {
+    auto user = std::ranges::find_if(m_notes_map, [&](const auto& item){
+        return item.first->getId() == user_id;
+    });
+
+    if (user == m_notes_map.end()) {
+        std::cerr << "Error while getting info about note with id: " << note_id;
+        std::cerr << "from user with id: " << user_id;
+        return {};
+    }
+
+    auto note = std::ranges::find_if(user->second, [&](const auto& item){
+        return item->getId() == note_id;
+    });
+
+    if (note == user->second.end()) {
+        std::cerr << "Error while updating note text with id - " << note_id << " for user with id - " << user_id << std::endl;
+        return {};
+    }
+
+    return {(*note)->getTitle(), (*note)->getText()};
+}
+
+void Repository::shareNoteToAllUsers(uint32_t owner_id, uint32_t note_id) {
+    auto note_info = getNoteInfo(note_id, owner_id);
+    if (note_info.first.empty()) {
+        std::cerr << "Error: Note not found for sharing. Owner id: " << owner_id
+                  << ", Note id: " << note_id << std::endl;
+        return;
+    }
+
+    const std::string& title = note_info.first;
+    const std::string& text = note_info.second;
+
+    std::cout << "Sharing note title: " << title << std::endl;
+    std::cout << "Sharing note text: " << text << std::endl;
+
+    // Проходим по всем пользователям кроме владельца
+    for (auto& [user_ptr, notes_vector] : m_notes_map) {
+        uint32_t current_user_id = user_ptr->getId();
+
+        // Пропускаем владельца
+        if (current_user_id == owner_id) {
+            continue;
+        }
+
+        // Проверяем, нет ли уже такой заметки у пользователя
+        bool note_already_exists = false;
+        for (const auto& note_ptr : notes_vector) {
+            if (note_ptr->getId() == note_id) {
+                note_already_exists = true;
+                break;
+            }
+//            if (note_ptr->getTitle() == title && note_ptr->getText() == text) {
+//                note_already_exists = true;
+//                break;
+//            }
+        }
+
+        // Если заметки еще нет, добавляем ее
+        if (!note_already_exists) {
+            // Создаем новую заметку для текущего пользователя
+//            const uint32_t new_note_id = ++m_notes_count;
+            auto new_note = std::make_shared<Note>(note_id, title);
+            new_note->setText(text);
+            notes_vector.emplace_back(new_note);
+
+            std::cout << "Shared note '" << title << "' to user with id: "
+                      << current_user_id << std::endl;
+        }
+    }
+}

@@ -54,4 +54,16 @@ namespace Protocol {
     std::vector<uint8_t> encodeUpdateTextResponse(const UpdateTextResponse& resp);
     std::optional<UpdateTextRequest> decodeUpdateTextRequest(const std::vector<uint8_t>& buffer);
     std::optional<UpdateTextResponse> decodeUpdateTextResponse(const std::vector<uint8_t>& buffer);
+
+    // SHARE_NOTE
+    std::vector<uint8_t> encodeShareNoteRequest(const ShareNoteRequest& req);
+    std::vector<uint8_t> encodeShareNoteResponse(const ShareNoteResponse& resp);
+    std::optional<ShareNoteRequest> decodeShareNoteRequest(const std::vector<uint8_t>& buffer);
+    std::optional<ShareNoteResponse> decodeShareNoteResponse(const std::vector<uint8_t>& buffer);
+
+    // SHARE_NOTE_NOTIFY
+    std::vector<uint8_t> encodeShareNoteNotifyRequest(const ShareNoteNotifyRequest& req);
+    std::vector<uint8_t> encodeShareNoteNotifyResponse(const ShareNoteNotifyResponse& resp);
+    std::optional<ShareNoteNotifyRequest> decodeShareNoteNotifyRequest(const std::vector<uint8_t>& buffer);
+    std::optional<ShareNoteNotifyResponse> decodeShareNoteNotifyResponse(const std::vector<uint8_t>& buffer);
 };

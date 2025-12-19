@@ -7,6 +7,8 @@
 struct NoteItem {
     int noteId;
     QString title;
+    bool isShared = false;
+    int ownerId = 0;
 };
 
 class NotesModel : public QAbstractListModel {
@@ -15,10 +17,18 @@ Q_OBJECT
 public:
     enum Roles {
         IdRole = Qt::UserRole + 1,
-        TitleRole
+        TitleRole,
+        IsSharedRole,
+        OwnerIdRole,
     };
 
     Q_INVOKABLE QString getTitleById(int noteId) const;
+    Q_INVOKABLE int personalNotesCount() const;
+    Q_INVOKABLE int sharedNotesCount() const;
+    Q_INVOKABLE bool isNoteShared(int noteId) const;
+//    Q_INVOKABLE QString getSection(int index) const;
+
+
     explicit NotesModel(QObject* parent = nullptr);
 
     // QAbstractListModel interface
@@ -27,7 +37,8 @@ public:
     QHash<int, QByteArray> roleNames() const override;
 
     // API
-    void addNote(int id, const QString& title);
+    void addPersonalNote(int id, const QString& title, int ownerId);
+    void addSharedNote(int id, const QString& title, int ownerId);
     const NoteItem& noteAt(int row) const;
 
 private:

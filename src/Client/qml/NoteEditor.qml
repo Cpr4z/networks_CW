@@ -13,6 +13,7 @@ ApplicationWindow {
     property int noteId: -1
     property string initialTitle: ""
     property string initialText: ""
+    property bool isNoteShared: false
 
     // Флаг изменений для предупреждения при закрытии
     property bool hasUnsavedChanges: false
@@ -115,12 +116,17 @@ ApplicationWindow {
                     MenuSeparator {}
 
                     MenuItem {
-                        text: "Экспортировать..."
+                        text: isNoteShared ? "👥 Расшарена" : "👤 Поделиться со всеми"
+                        enabled: !isNoteShared  // Неактивна если уже расшарена
+                        onTriggered: {
+                            shareConfirmDialog.open();
+                        }
                     }
 
-                    MenuItem {
-                        text: "Поделиться..."
-                    }
+                    // MenuItem {
+                    //     text: "Поделиться заметкой..."
+                    //     onTriggered: shareDialog.open()  // ← Открываем диалог расшаривания
+                    // }
                 }
             }
         }
@@ -216,6 +222,66 @@ ApplicationWindow {
             // TODO: Добавить метод удаления заметки
             console.log("Deleting note:", noteId)
             noteWindow.close()
+        }
+    }
+
+    Dialog {
+        id: shareConfirmDialog
+        anchors.centerIn: parent
+        title: "Поделиться заметкой"
+        standardButtons: Dialog.Ok | Dialog.Cancel
+
+        Label {
+            width: parent.width
+            wrapMode: Text.WordWrap
+            text: "Заметка <b>\"" + titleField.text + "\"</b> станет доступна всем пользователям."
+        }
+
+        onAccepted: {
+            console.log("Sharing note:", noteId);
+            notesManager.shareNoteWithEveryone(noteId);
+        }
+    }
+
+    Popup {
+        id: shareSuccessPopup
+        anchors.centerIn: parent
+        width: 300
+        height: 120
+        modal: true
+
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 20
+
+            RowLayout {
+                Layout.fillWidth: true
+
+                Text {
+                    text: "✓"
+                    font.pixelSize: 24
+                    color: "green"
+                }
+
+                Label {
+                    Layout.fillWidth: true
+                    text: "Заметка расшарена!"
+                    font.bold: true
+                }
+            }
+
+            Label {
+                Layout.fillWidth: true
+                text: "Теперь все пользователи могут видеть и редактировать эту заметку."
+                wrapMode: Text.WordWrap
+                color: "gray"
+            }
+
+            Button {
+                Layout.alignment: Qt.AlignHCenter
+                text: "OK"
+                onClicked: shareSuccessPopup.close()
+            }
         }
     }
 

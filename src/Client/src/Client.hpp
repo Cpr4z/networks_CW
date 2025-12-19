@@ -25,6 +25,7 @@ public:
     void sendCreateNoteRequest(const QString& title); // user_id
     void sendOpenNoteRequest(uint32_t note_id);
     void sendUpdateTextRequest(uint32_t note_id, const QString& text);
+    void sendShareNoteRequest(uint32_t note_id);
 
     void setUsername(const QString& username) { m_username = username; }
 
@@ -38,16 +39,18 @@ signals:
     void registrationFailed(const QString& reason);
 
     // CREATE_NOTE
-    void noteCreationSuccess(const QString& title, uint32_t noteId);
+    void noteCreationSuccess(const QString& title, uint32_t noteId, uint32_t ownerId);
     void noteCreationFailed(const QString& reason);
 
     // OPEN_NOTE
-    void noteOpenSuccess(uint32_t note_id, const std::string& text);
+    void noteOpenSuccess(uint32_t note_id, const QString& text);
     void noteOpenFailed(uint32_t note_id, const QString& reason);
 
     // UPDATE_TEXT
     void updateTextSuccess(uint32_t note_id, uint32_t user_id);
     void updateTextFailed(const QString& reason);
+
+    void createSharedNote(uint32_t note_id, const QString& title, uint32_t user_id);
 
 
 private slots:
@@ -61,6 +64,10 @@ private:
     void handleCreateNoteResponse(const std::vector<uint8_t>& buffer);
     void handleOpenNoteResponse(const std::vector<uint8_t>& buffer);
     void handleUpdateTextResponse(const std::vector<uint8_t>& buffer);
+    void handleShareNoteResponse(const std::vector<uint8_t>& buffer);
+
+
+    void handleShareNoteNotifyRequest(const std::vector<uint8_t>& buffer);
 
 private:
     uint32_t m_user_id = 0;

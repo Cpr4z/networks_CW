@@ -665,7 +665,8 @@ namespace Protocol {
 
 
     std::vector<uint8_t> encodeUpdateTextRequest(const UpdateTextRequest& req) {
-        uint32_t text_len = static_cast<uint32_t>(req.text.size());
+        std::string text = req.text;
+        uint32_t text_len = static_cast<uint32_t>(text.size());
 
         // 2(op) + 4(user_id) + 4(note_id) + 4(text_len) + text
         std::vector<uint8_t> buffer(2 + 4 + 4 + 4 + text_len);
@@ -677,25 +678,25 @@ namespace Protocol {
         ptr += sizeof(op);
 
         // user_id
-        std::memcpy(ptr, &req.user_id, sizeof(req.user_id));
-        ptr += sizeof(req.user_id);
+        std::memcpy(ptr, &req.user_id, sizeof(uint32_t));
+        ptr += sizeof(uint32_t);
 
 //        uint32_t user_id_net = htonl(req.user_id);
 //        std::memcpy(ptr, &user_id_net, sizeof(user_id_net));
 //        ptr += sizeof(user_id_net);
 
         // note_id
-        std::memcpy(ptr, &req.note_id, sizeof(req.note_id));
-        ptr += sizeof(req.note_id);
+        std::memcpy(ptr, &req.note_id, sizeof(uint32_t));
+        ptr += sizeof(uint32_t);
 
         // Длина текста
         std::memcpy(ptr, &text_len, sizeof(text_len));
         ptr += sizeof(text_len);
 
         // Текст заметки
-        if (text_len > 0) {
-            std::memcpy(ptr, req.text.data(), text_len);
-        }
+//        if (text_len > 0) {
+            std::memcpy(ptr, text.data(), text_len);
+//        }
 
         return buffer;
 //        return {};
@@ -722,11 +723,12 @@ namespace Protocol {
     }
 
     std::optional<UpdateTextRequest> decodeUpdateTextRequest(const std::vector<uint8_t>& buffer) {
+        std::cout << "decodeUpdateTextRequest call" << std::endl;
         constexpr size_t MIN_SIZE = 2 + 4 + 4 + 4; // op + user_id + note_id + text_len
 
-        if (buffer.size() < MIN_SIZE) {
-            return std::nullopt;
-        }
+//        if (buffer.size() < MIN_SIZE) {
+//            return std::nullopt;
+//        }
 
         const uint8_t* ptr = buffer.data();
 
@@ -735,35 +737,43 @@ namespace Protocol {
         std::memcpy(&op, ptr, sizeof(op));
         ptr += sizeof(op);
 
-        if (op != static_cast<uint16_t>(Operation::UPDATE_TEXT)) {
-            return std::nullopt;
-        }
+//        if (op != static_cast<uint16_t>(Operation::UPDATE_TEXT)) {
+//            return std::nullopt;
+//        }
 
         UpdateTextRequest req;
 
         // user_id
-        std::memcpy(&req.user_id, ptr, sizeof(req.user_id));
-        ptr += sizeof(req.user_id);
+        std::memcpy(&req.user_id, ptr, sizeof(uint32_t));
+        ptr += sizeof(uint32_t);
 
         // note_id
-        std::memcpy(&req.note_id, ptr, sizeof(req.note_id));
-        ptr += sizeof(req.note_id);
+        std::memcpy(&req.note_id, ptr, sizeof(uint32_t));
+        ptr += sizeof(uint32_t);
 
         // Длина текста
         uint32_t text_len;
-        std::memcpy(&text_len, ptr, sizeof(text_len));
-        ptr += sizeof(text_len);
+        std::memcpy(&text_len, ptr, sizeof(uint32_t));
+        ptr += sizeof(uint32_t);
 
         // Проверяем размер
-        if (buffer.size() < MIN_SIZE + text_len) {
-            return std::nullopt;
-        }
+//        if (buffer.size() < MIN_SIZE + text_len) {
+//            return std::nullopt;
+//        }
 
         // Читаем текст
-        if (text_len > 0) {
-            req.text.assign(reinterpret_cast<const char*>(ptr), text_len);
-        }
+//        if (text_len > 0) {
 
+        //std::string login(reinterpret_cast<const char*>(ptr), loginLen);
+            std::cout << "Size of text is: " << text_len << std::endl;
+            std::string text(reinterpret_cast<const char*>(ptr), text_len);
+            req.text = std::move(text);
+//            req.text.assign(reinterpret_cast<const char*>(ptr), text_len);
+//        }
+
+        std::cout << req.note_id << std::endl;
+        std::cout << req.user_id << std::endl;
+        std::cout << req.text << std::endl;
         return req;
 //        return {};
     }
@@ -771,9 +781,9 @@ namespace Protocol {
     std::optional<UpdateTextResponse> decodeUpdateTextResponse(const std::vector<uint8_t>& buffer) {
         constexpr size_t REQUIRED_SIZE = 2 + 1 + 4; // op + status + note_id
 
-        if (buffer.size() < REQUIRED_SIZE) {
-            return std::nullopt;
-        }
+//        if (buffer.size() < REQUIRED_SIZE) {
+//            return std::nullopt;
+//        }
 
         const uint8_t* ptr = buffer.data();
 
@@ -782,9 +792,9 @@ namespace Protocol {
         std::memcpy(&op, ptr, sizeof(op));
         ptr += sizeof(op);
 
-        if (op != static_cast<uint16_t>(Operation::UPDATE_TEXT)) {
-            return std::nullopt;
-        }
+//        if (op != static_cast<uint16_t>(Operation::UPDATE_TEXT)) {
+//            return std::nullopt;
+//        }
 
         UpdateTextResponse resp;
         resp.op = Operation::UPDATE_TEXT;
@@ -800,6 +810,171 @@ namespace Protocol {
 //        return {};
     }
 
+    std::vector<uint8_t> encodeShareNoteRequest(const ShareNoteRequest& req) {
+//        struct ShareNoteRequest {
+//            uint32_t user_id;
+//            uint32_t note_id;
+//        };
 
+        std::vector<uint8_t> buffer(2 + 4 + 4);
 
+        uint8_t* ptr = buffer.data();
+
+        uint16_t op = static_cast<uint16_t>(Operation::SHARE_NOTE);
+        std::memcpy(ptr, &op, sizeof(op));
+        ptr += sizeof(op);
+
+        std::memcpy(ptr, &req.user_id, sizeof(req.user_id));
+        ptr += sizeof(req.user_id);
+
+        std::memcpy(ptr, &req.note_id, sizeof(req.note_id));
+        ptr += sizeof(req.note_id);
+
+        return buffer;
+//        return {};
+    }
+
+    std::vector<uint8_t> encodeShareNoteResponse(const ShareNoteResponse& resp) {
+        return {};
+    }
+
+    std::optional<ShareNoteRequest> decodeShareNoteRequest(const std::vector<uint8_t>& buffer) {
+//        return {};
+        ShareNoteRequest req;
+        const uint8_t* ptr = buffer.data();
+
+        Protocol::Operation op;
+        uint16_t op_raw;
+        std::memcpy(&op_raw, ptr, sizeof(op_raw));
+        ptr += sizeof(op_raw);
+
+        std::memcpy(&req.user_id, ptr, sizeof(req.user_id));
+        ptr += sizeof(req.user_id);
+
+        std::memcpy(&req.note_id, ptr, sizeof(req.note_id));
+//        ptr +=
+
+        return req;
+    }
+
+    std::optional<ShareNoteResponse> decodeShareNoteResponse(const std::vector<uint8_t>& buffer) {
+        return {};
+    }
+
+    // SHARE_NOTE_NOTIFY
+    std::vector<uint8_t> encodeShareNoteNotifyRequest(const ShareNoteNotifyRequest& req) {
+        uint32_t title_len = static_cast<uint32_t>(req.note_title.size());
+//        uint32_t text_len = static_cast<uint32_t>(req.note_text.size());
+
+        std::cout << "encodeShareNoteNotifyRequest data:" << std::endl;
+        std::cout << req.note_title << "Size of title is: " << title_len << std::endl;
+//        std::cout << req.note_text << "Size of text is: " << text_len << std::endl;
+
+        // 4(note_id) + 4(owner_id) + 4(title_len) + title + 4(text_len) + text
+        std::vector<uint8_t> buffer(2 + 4 + 4 + 4 + title_len);
+        uint8_t* ptr = buffer.data();
+
+        // op - 2
+        std::memcpy(ptr, &req.op, sizeof(req.op));
+        ptr += sizeof(req.op);
+
+        // note_id - 4
+        std::memcpy(ptr, &req.note_id, sizeof(req.note_id));
+        ptr += sizeof(req.note_id);
+
+        // owner_id - 4
+        std::memcpy(ptr, &req.owner_id, sizeof(req.owner_id));
+        ptr += sizeof(req.owner_id);
+
+        // Длина заголовка - 4
+        std::memcpy(ptr, &title_len, sizeof(title_len));
+        ptr += sizeof(title_len);
+
+        // Длина текста - 4
+//        std::memcpy(ptr, &text_len, sizeof(text_len));
+//        ptr += sizeof(text_len);
+
+        // Заголовок заметки
+        if (title_len > 0) {
+            std::memcpy(ptr, req.note_title.data(), title_len);
+            ptr += title_len;
+        }
+
+        // Текст заметки
+//        if (text_len > 0) {
+//            std::memcpy(ptr, req.note_text.data(), text_len);
+//        }
+
+        return buffer;
+//        return {};
+    }
+
+    std::vector<uint8_t> encodeShareNoteNotifyResponse(const ShareNoteNotifyResponse& resp) {
+        return {};
+    }
+
+    std::optional<ShareNoteNotifyRequest> decodeShareNoteNotifyRequest(const std::vector<uint8_t>& buffer) {
+        constexpr size_t MIN_SIZE = 2 + 4 + 4 + 4; // note_id + owner_id + title_len + text_len
+
+        if (buffer.size() < MIN_SIZE) {
+            std::cout << "Return nullopt 1" << std::endl;
+            return std::nullopt;
+        }
+
+        const uint8_t* ptr = buffer.data();
+
+        ShareNoteNotifyRequest req;
+
+        uint16_t op;
+        std::memcpy(&op, ptr, sizeof(op));
+        ptr += sizeof(op);
+
+        // note_id
+        std::memcpy(&req.note_id, ptr, sizeof(req.note_id));
+        ptr += sizeof(req.note_id);
+
+        // owner_id
+        std::memcpy(&req.owner_id, ptr, sizeof(req.owner_id));
+        ptr += sizeof(req.owner_id);
+
+        // Длина заголовка
+        uint32_t title_len;
+        std::memcpy(&title_len, ptr, sizeof(title_len));
+        ptr += sizeof(title_len);
+
+        // Длина текста
+//        uint32_t text_len;
+//        std::memcpy(&text_len, ptr, sizeof(text_len));
+//        ptr += sizeof(text_len);
+
+        // Проверяем общий размер
+        size_t expected_size = MIN_SIZE + title_len;
+        if (buffer.size() < expected_size) {
+//            std::cout << "Title is: " <<
+            std::cout << "Title len: " << title_len << std::endl;
+//            std::cout << "Text len: " << text_len << std::endl;
+            std::cout << expected_size << std::endl;
+            std::cout << buffer.size() << std::endl;
+            std::cout << "Return nullopt 2" << std::endl;
+            return std::nullopt;
+        }
+
+        // Читаем заголовок
+        if (title_len > 0) {
+            req.note_title.assign(reinterpret_cast<const char*>(ptr), title_len);
+            ptr += title_len;
+        }
+
+        // Читаем текст
+//        if (text_len > 0) {
+//            req.note_text.assign(reinterpret_cast<const char*>(ptr), text_len);
+//        }
+
+        return req;
+//        return {};
+    }
+
+    std::optional<ShareNoteNotifyResponse> decodeShareNoteNotifyResponse(const std::vector<uint8_t>& buffer) {
+        return {};
+    }
 }

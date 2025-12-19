@@ -8,6 +8,7 @@
 #include <thread>
 #include <vector>
 #include <atomic>
+#include <unordered_set>
 
 #include <Protocol.hpp>
 
@@ -38,6 +39,8 @@ private:
     void handleCreateNoteRequest(int client_fd, const std::vector<uint8_t>& buffer);
     void handleOpenNoteRequest(int client_fd, const std::vector<uint8_t>& buffer);
     void handleUpdateTextRequest(int client_fd, const std::vector<uint8_t>& buffer);
+    void handleShareNoteRequest(int client_fd, const std::vector<uint8_t>& buffer);
+    void handleShareNoteNotifyRequest(int client_fd, const std::vector<uint8_t>& buffer);
 
     void sendAuthResponse(int client_fd, const Protocol::AuthResponse& response);
     void sendRegistrationResponse(int client_fd, const Protocol::RegistrationResponse& response);
@@ -46,6 +49,13 @@ private:
     void sendCreateNoteResponse(int client_fd, const Protocol::CreateNoteResponse& response);
     void sendOpenNoteResponse(int client_fd, const Protocol::OpenNoteResponse& response);
     void sendUpdateTextResponse(int client_fd, const Protocol::UpdateTextResponse& response);
+    void sendShareNoteResponse(int client_fd, const Protocol::ShareNoteResponse& response);
+
+
+    void sendShareNoteNotifyRequest(int client_fd, const Protocol::ShareNoteNotifyRequest& request);
+
+private:
+    void broadcastToAllClients(int client_fd, const std::vector<uint8_t>& data);
 
 public:
     SyncServer(int port, const std::string& host);
@@ -56,6 +66,8 @@ public:
 
 
 private:
+    std::mutex m_clients_mutex;
+    std::unordered_set<int> m_connected_clients;
     RepositoryPtr m_repository;
 };
 
