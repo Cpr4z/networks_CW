@@ -66,4 +66,10 @@ namespace Protocol {
     std::vector<uint8_t> encodeShareNoteNotifyResponse(const ShareNoteNotifyResponse& resp);
     std::optional<ShareNoteNotifyRequest> decodeShareNoteNotifyRequest(const std::vector<uint8_t>& buffer);
     std::optional<ShareNoteNotifyResponse> decodeShareNoteNotifyResponse(const std::vector<uint8_t>& buffer);
+
+    // APPROVE_MERGE
+    std::vector<uint8_t> encodeApproveMergeRequest(const ApproveMergeRequest& req);
+    std::vector<uint8_t> encodeApproveMergeResponse(const ApproveMergeResponse& resp);
+    std::optional<ApproveMergeRequest> decodeApproveMergeRequest(const std::vector<uint8_t>& buffer);
+    std::optional<ApproveMergeResponse> decodeApproveMergeResponse(const std::vector<uint8_t>& buffer);
 };

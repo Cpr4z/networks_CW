@@ -20,7 +20,6 @@ public:
 
     void sendAuthRequest(const QString& login, const QString& password);
     void sendRegistrationRequest(const QString& login, const QString& password);
-    void sendSyncRequest();
     void sendGetNotesRequest(); // user_id
     void sendCreateNoteRequest(const QString& title); // user_id
     void sendOpenNoteRequest(uint32_t note_id, uint32_t version);
@@ -29,7 +28,7 @@ public:
     void sendSyncNoteRequest(uint32_t note_id);
     void sendApproveMergeRequest(uint32_t noteId, const QString& merged_version);
 
-    void setUsername(const QString& username) { m_username = username; }
+//    void setUsername(const QString& username) { m_username = username; }
 
 signals:
     // AUTH
@@ -68,12 +67,13 @@ private:
     void handleOpenNoteResponse(const std::vector<uint8_t>& buffer);
     void handleUpdateTextResponse(const std::vector<uint8_t>& buffer);
     void handleShareNoteResponse(const std::vector<uint8_t>& buffer);
+    void handleApproveMergeResponse(const std::vector<uint8_t>& buffer);
 
     void handleShareNoteNotifyRequest(const std::vector<uint8_t>& buffer);
 
 private:
     uint32_t m_user_id = 0;
-    QString m_username;
+//    QString m_username;
     QTcpSocket m_socket;
 //    DocumentsMap m_documents;
 };

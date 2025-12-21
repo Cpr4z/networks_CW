@@ -1,78 +1,76 @@
 #pragma once
 
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <iostream>
+#include <thread>
 #include <vector>
+#include <atomic>
+#include <unordered_set>
 
-#include <Note.hpp>
-#include <User.hpp>
-
-#include "Reactor.hpp"
-#include "Task.hpp"
-#include "Operation.hpp"
+#include <Protocol.hpp>
 
 #include "Repository.hpp"
 
-class NoteServer {
-public:
-    explicit NoteServer(int port, const std::string& host);
+class Server {
+private:
+    int m_port;
+    std::string m_host;
+    int m_server_fd = -1;
+    std::atomic<bool> m_running{false};
+    std::vector<std::thread> m_client_threads;
 
-    ~NoteServer() {
-        stop();
-        if (m_reactor_thread.joinable()) {
-            m_reactor_thread.join();
-        }
-    }
-
-    Task<void> runAsync();
-//    Task<void> handleClient(int client_fd);
-    void stop();
-
-    void createDocument();
-//    void createUser(const std::string& name);
-
-    void closeDocument(Id id);
-    void deleteUser(Id id);
-
-    void startReactor() {
-        if (m_reactor) {
-            m_reactor->run();
-        }
-    }
-
-    std::shared_ptr<Reactor> getReactor() const { return m_reactor; }
+    void handleClient(int client_fd);
+    void processClientMessages(int client_fd);
+    void processClientMessage(int client_fd,
+                         const std::vector<uint8_t>& message);
+    size_t getMessageLength(Protocol::Operation op,
+    const std::vector<uint8_t>& buffer,
+            size_t offset);
 
 private:
-    Task<void> handleClient(int client_fd);
-    Task<void> processClientMessages(int client_fd);
-    void onClientDisconnected(int client_fd);
-
-    size_t getMessageLength(Protocol::Operation op,
-                            const std::vector<uint8_t>& buffer,
-                            size_t offset);
-
-
-    Id getNextUserId();
-    Id getNextDocId();
-
-    void processClientMessage(int client_fd, const std::vector<uint8_t>& message);
-
 
     void handleAuthRequest(int client_fd, const std::vector<uint8_t>& buffer);
     void handleRegistrationRequest(int client_fd, const std::vector<uint8_t>& buffer);
+    void handleGetNotesRequest(int client_fd, const std::vector<uint8_t>& buffer);
+    void handleSyncRequest(int client_fd, const std::vector<uint8_t>& buffer);
+    void handleCreateNoteRequest(int client_fd, const std::vector<uint8_t>& buffer);
+    void handleOpenNoteRequest(int client_fd, const std::vector<uint8_t>& buffer);
+    void handleUpdateTextRequest(int client_fd, const std::vector<uint8_t>& buffer);
+    void handleShareNoteRequest(int client_fd, const std::vector<uint8_t>& buffer);
+    void handleShareNoteNotifyRequest(int client_fd, const std::vector<uint8_t>& buffer);
+    void handleApproveMergeRequest(int client_fd, const std::vector<uint8_t>& buffer);
+
+    void sendAuthResponse(int client_fd, const Protocol::AuthResponse& response);
+    void sendRegistrationResponse(int client_fd, const Protocol::RegistrationResponse& response);
+    void sendGetNotesResponse(int client_fd, const Protocol::GetNotesResponse& response);
+    void sendSyncResponse(int client_fd, const Protocol::SyncNoteResponse& response);
+    void sendCreateNoteResponse(int client_fd, const Protocol::CreateNoteResponse& response);
+    void sendOpenNoteResponse(int client_fd, const Protocol::OpenNoteResponse& response);
+    void sendUpdateTextResponse(int client_fd, const Protocol::UpdateTextResponse& response);
+    void sendShareNoteResponse(int client_fd, const Protocol::ShareNoteResponse& response);
+    void sendApproveMergeResponse(int client_fd, const Protocol::ApproveMergeResponse& response);
+
+
+    void sendShareNoteNotifyRequest(int client_fd, const Protocol::ShareNoteNotifyRequest& request);
 
 private:
-    int m_port = 0;
-    std::string m_host;
-    int m_server_fd = -1;
+    void broadcastToAllClients(int client_fd, const std::vector<uint8_t>& data);
 
-    std::shared_ptr<Reactor> m_reactor;
-    std::atomic<bool> m_running = false;
+public:
+    Server(int port, const std::string& host);
+    ~Server();
 
+    void run();
+    void stop();
+
+
+private:
+    std::mutex m_clients_mutex;
+    std::unordered_set<int> m_connected_clients;
     RepositoryPtr m_repository;
-
-    std::unordered_map<int, std::shared_ptr<User>> m_client_users;
-    std::mutex m_mutex;
-//    DocumentsMap m_documents;
-    UsersMap m_users;
-
-    std::thread m_reactor_thread;
 };
+
+

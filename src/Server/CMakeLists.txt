@@ -5,27 +5,11 @@ set(CMAKE_CXX_STANDARD 23)
 
 set(HEADERS
         Server.hpp
-        AcceptAwaiter.hpp
-        ReadAwaiter.hpp
-        WriteAwaiter.hpp
-        Reactor.hpp
-        Task.hpp
-        SyncServer.hpp
-#        User.hpp
-#        Note.hpp
         Repository.hpp
         )
 
 set(SOURCES
         Server.cpp
-        AcceptAwaiter.cpp
-        ReadAwaiter.cpp
-        WriteAwaiter.cpp
-        Reactor.cpp
-        Task.cpp
-        SyncServer.cpp
-#        Note.cpp
-#        User.cpp
         Repository.cpp
 )
 
