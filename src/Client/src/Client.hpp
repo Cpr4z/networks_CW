@@ -26,6 +26,8 @@ public:
     void sendOpenNoteRequest(uint32_t note_id, uint32_t version);
     void sendUpdateTextRequest(uint32_t note_id, const QString& text, uint32_t version);
     void sendShareNoteRequest(uint32_t note_id, uint32_t version);
+    void sendSyncNoteRequest(uint32_t note_id);
+    void sendApproveMergeRequest(uint32_t noteId, const QString& merged_version);
 
     void setUsername(const QString& username) { m_username = username; }
 
@@ -48,10 +50,11 @@ signals:
 
     // UPDATE_TEXT
     void updateTextSuccess(uint32_t note_id, uint32_t user_id);
-    void updateTextFailed(const QString& reason);
+    void updateTextFailed(uint8_t reason);
 
     void createSharedNote(uint32_t note_id, const QString& title, uint32_t user_id, uint32_t version);
 
+    void createSyncDialog(const QString& server_text);
 
 private slots:
     void onReadyRead();
@@ -65,7 +68,6 @@ private:
     void handleOpenNoteResponse(const std::vector<uint8_t>& buffer);
     void handleUpdateTextResponse(const std::vector<uint8_t>& buffer);
     void handleShareNoteResponse(const std::vector<uint8_t>& buffer);
-
 
     void handleShareNoteNotifyRequest(const std::vector<uint8_t>& buffer);
 

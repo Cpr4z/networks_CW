@@ -30,13 +30,15 @@ ApplicationWindow {
     function saveNote() {
         if (noteId === -1) return
 
-        if (localVersion < serverVersion) {
-            conflictDetected = true
-            conflictDialog.localContent = textArea.text
-            conflictDialog.serverVersion = serverVersion
-            conflictDialog.open()
-            return
-        }
+        // if (localVersion < serverVersion) {
+        //     console.log(localVersion);
+        //     console.log(serverVersion);
+        //     conflictDetected = true
+        //     conflictDialog.localContent = textArea.text
+        //     conflictDialog.serverVersion = serverVersion
+        //     conflictDialog.open()
+        //     return
+        // }
 
         notesManager.updateNote(noteId, textArea.text, localVersion)
         hasUnsavedChanges = false
@@ -200,6 +202,7 @@ ApplicationWindow {
     // Диалог при закрытии с несохраненными изменениями
     Dialog {
         id: unsavedChangesDialog
+        anchors.centerIn: parent
         title: "Несохраненные изменения"
         standardButtons: Dialog.Save | Dialog.Discard | Dialog.Cancel
 
@@ -250,37 +253,40 @@ ApplicationWindow {
 
         onAccepted: {
             console.log("Sharing note:", noteId);
-            notesManager.shareNoteWithEveryone(noteId, version);
+            notesManager.shareNoteWithEveryone(noteId, localVersion);
         }
     }
 
     ConflictDialog {
         id: conflictDialog
+        anchors.centerIn: parent
         noteId: noteWindow.noteId
         noteTitle: titleField.text
 
         onAcceptServer: {
             // Пользователь выбрал принять серверную версию
+            notesManager.updateNote(noteId, conflictDialog.serverContent, serverVersion)
             conflictDetected = false
             localVersion = serverVersion
             textArea.text = conflictDialog.serverContent
             hasUnsavedChanges = false
         }
 
-        onOverwriteServer: {
-            // Пользователь выбрал перезаписать сервер
-            conflictDetected = false
-            localVersion++ // Увеличиваем версию
-            notesManager.forceUpdateNote(noteId, content, localVersion)
-            hasUnsavedChanges = false
-        }
+        // onOverwriteServer: {
+        //     // Пользователь выбрал перезаписать сервер
+        //     conflictDetected = false
+        //     localVersion++ // Увеличиваем версию
+        //     notesManager.forceUpdateNote(noteId, content, localVersion)
+        //     hasUnsavedChanges = false
+        // }
 
         onMergeManually: {
             // Пользователь выбрал ручное слияние
             conflictDetected = false
             localVersion++ // Увеличиваем версию
             textArea.text = content // Текст после ручного редактирования
-            notesManager.forceUpdateNote(noteId, content, localVersion)
+            notesManager.ownerApprove(noteId, content);
+            // notesManager.forceUpdateNote(noteId, content, localVersion)
             hasUnsavedChanges = false
         }
     }
@@ -330,27 +336,41 @@ ApplicationWindow {
     Connections {
         target: notesManager
 
-        // Когда приходит обновление от сервера
-        onServerVersionChanged: function(noteId, content, version, sender) {
-            if (noteId !== noteWindow.noteId) return
+        function onNoteUpdateConflict() {
+            notesManager.syncNote(noteId);
+        }
 
-            serverVersion = version
-
-            if (!conflictDetected) {
-                if (localVersion < serverVersion && hasUnsavedChanges) {
-                    // Активный конфликт - показываем диалог
-                    conflictDialog.localContent = textArea.text
-                    conflictDialog.serverContent = content
-                    conflictDialog.serverVersion = version
-                    conflictDialog.open()
-                } else if (localVersion < serverVersion) {
-                    // Просто обновляем, если нет локальных изменений
-                    textArea.text = content
-                    localVersion = serverVersion
-                }
-            }
+        function onCreateSyncDialog(server_text) {
+            conflictDialog.localContent = textArea.text;
+            conflictDialog.serverContent = server_text;
+            conflictDialog.open()
         }
     }
+
+    // Connections {
+        // target: notesManager
+
+        // Когда приходит обновление от сервера
+        // onServerVersionChanged: function(noteId, content, version, sender) {
+        //     if (noteId !== noteWindow.noteId) return
+        //
+        //     serverVersion = version
+        //
+        //     if (!conflictDetected) {
+        //         if (localVersion < serverVersion && hasUnsavedChanges) {
+        //             // Активный конфликт - показываем диалог
+        //             conflictDialog.localContent = textArea.text
+        //             conflictDialog.serverContent = content
+        //             conflictDialog.serverVersion = version
+        //             conflictDialog.open()
+        //         } else if (localVersion < serverVersion) {
+        //             // Просто обновляем, если нет локальных изменений
+        //             textArea.text = content
+        //             localVersion = serverVersion
+        //         }
+        //     }
+        // }
+    // }
 
     // Горячие клавиши - ИСПРАВЛЕНО
     Shortcut {

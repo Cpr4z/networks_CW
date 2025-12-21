@@ -2,19 +2,6 @@
 
 #include <string>
 
-// insert
-// delete
-// update
-// selection_change
-// sync_request
-// sync_response
-// user_add
-// user_delete
-// ack
-// nack
-
-// cursor_move ??
-
 namespace Protocol {
     enum class Operation: uint16_t {
         AUTH = 0x0001,
@@ -26,12 +13,6 @@ namespace Protocol {
         UPDATE_TEXT = 0x0007,
         SHARE_NOTE = 0x0008,
         SHARE_NOTE_NOTIFY = 0x0009,
-        INSERT,
-        DELETE,
-        UPDATE,
-        SELECTION_CHANGE,
-        DELETE_USER,
-        ACK,
-        NACK
+        APPROVE_MERGE = 0x00010
     };
 }

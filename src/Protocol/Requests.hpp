@@ -27,7 +27,8 @@ namespace Protocol {
     };
 
     struct SyncNoteRequest {
-//        Operation op;
+        uint32_t note_id;
+        uint32_t user_id;
     };
 
     struct OpenNoteRequest {
@@ -46,6 +47,7 @@ namespace Protocol {
     struct ShareNoteRequest {
         uint32_t user_id;
         uint32_t note_id;
+        uint32_t version;
     };
 
     struct ShareNoteNotifyRequest {
@@ -55,5 +57,11 @@ namespace Protocol {
         uint32_t version;
         std::string note_title;
 //        std::string note_text;
+    };
+
+    struct ApproveMergeRequest {
+        uint32_t note_id;
+        uint32_t user_id;
+        std::string merged_text;
     };
 }

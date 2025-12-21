@@ -10,16 +10,14 @@ Dialog {
     height: 450
     title: "Конфликт изменений"
 
-    // 🔹 Входные данные
     property int noteId
     property string noteTitle
     property string localContent
     property string serverContent
     property int serverVersion
 
-    // 🔹 Выход (решение пользователя)
     signal acceptServer(int noteId)
-    signal overwriteServer(int noteId, string content)
+    // signal overwriteServer(int noteId, string content)
     signal mergeManually(int noteId, string content)
 
     ColumnLayout {
@@ -99,13 +97,13 @@ Dialog {
                 }
             }
 
-            Button {
-                text: "Перезаписать сервер"
-                onClicked: {
-                    dialog.overwriteServer(noteId, localContent)
-                    dialog.close()
-                }
-            }
+            // Button {
+            //     text: "Перезаписать сервер"
+            //     onClicked: {
+            //         dialog.overwriteServer(noteId, localContent)
+            //         dialog.close()
+            //     }
+            // }
 
             Button {
                 text: "Сохранить объединённую"

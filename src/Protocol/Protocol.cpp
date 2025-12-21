@@ -288,19 +288,81 @@ namespace Protocol {
 
 
     std::vector<uint8_t> encodeSyncRequest(const SyncNoteRequest& req) {
-        return {};
+        std::vector<uint8_t> buffer(2 + 4 + 4);
+        auto op = static_cast<uint16_t>(Operation::SYNC);
+        uint8_t* ptr = buffer.data();
+        std::memcpy(ptr, &op, sizeof(op));
+        ptr += sizeof(op);
+
+        // note_id
+        std::memcpy(ptr, &req.note_id, sizeof(req.note_id));
+        ptr += sizeof(req.note_id);
+
+        // user_id
+        std::memcpy(ptr, &req.user_id, sizeof(req.user_id));
+        ptr += sizeof(req.user_id);
+
+        return buffer;
     }
 
     std::vector<uint8_t> encodeSyncResponse(const SyncNoteResponse& resp) {
-        return {};
+        const auto textSize = static_cast<uint32_t>(resp.text.size());
+
+        std::vector<uint8_t> buffer(2 + 4 + 4 + textSize);
+
+        uint8_t* ptr = buffer.data();
+
+        const auto op = static_cast<uint16_t>(resp.op);
+        std::memcpy(ptr, &op, sizeof(op));
+        ptr += sizeof(op);
+
+        std::memcpy(ptr, &resp.version, sizeof(resp.version));
+        ptr += sizeof(resp.version);
+
+        std::memcpy(ptr, &textSize, sizeof(textSize));
+        ptr += sizeof(textSize);
+
+        std::memcpy(ptr, resp.text.data(), textSize);
+
+        return buffer;
     }
 
     std::optional<SyncNoteRequest> decodeSyncRequest(const std::vector<uint8_t>& buffer) {
-        return {};
+        SyncNoteRequest request;
+
+        const uint8_t* ptr = buffer.data();
+
+        uint16_t op;
+        std::memcpy(&op, ptr, sizeof(op));
+        ptr += sizeof(op);
+
+        std::memcpy(&request.note_id, ptr, sizeof(request.note_id));
+        ptr += sizeof(request.note_id);
+
+        std::memcpy(&request.user_id, ptr, sizeof(request.user_id));
+//        ptr += sizeof(request.user_id);
+
+        return request;
     }
 
     std::optional<SyncNoteResponse> decodeSyncResponse(const std::vector<uint8_t>& buffer) {
-        return {};
+        SyncNoteResponse response;
+
+        const uint8_t* ptr = buffer.data();
+
+        std:memcpy(&response.op, ptr, sizeof(response.op));
+        ptr += sizeof(response.op);
+
+        std::memcpy(&response.version, ptr, sizeof(response.version));
+        ptr += sizeof(response.version);
+
+        uint32_t textLen;
+        std::memcpy(&textLen, ptr, sizeof(textLen));
+        ptr += sizeof(textLen);
+
+//        std::string note_text(reinterpret_cast<const char*>(ptr), textLen);
+        response.text.assign(reinterpret_cast<const char*>(ptr), textLen);
+        return response;
     }
 
 
@@ -836,6 +898,7 @@ namespace Protocol {
 //        struct ShareNoteRequest {
 //            uint32_t user_id;
 //            uint32_t note_id;
+//            uint32_t version
 //        };
 
         std::vector<uint8_t> buffer(2 + 4 + 4);
@@ -852,8 +915,10 @@ namespace Protocol {
         std::memcpy(ptr, &req.note_id, sizeof(req.note_id));
         ptr += sizeof(req.note_id);
 
+        std::memcpy(ptr, &req.version, sizeof(req.version));
+        ptr += sizeof(req.version);
+
         return buffer;
-//        return {};
     }
 
     std::vector<uint8_t> encodeShareNoteResponse(const ShareNoteResponse& resp) {
@@ -874,6 +939,9 @@ namespace Protocol {
         ptr += sizeof(req.user_id);
 
         std::memcpy(&req.note_id, ptr, sizeof(req.note_id));
+        ptr += sizeof(req.note_id);
+
+        std::memcpy(&req.version, ptr, sizeof(req.version));
 //        ptr +=
 
         return req;

@@ -2,10 +2,10 @@
 
 #include <ranges>
 
-Note::Note(Id id, const std::string& title) : m_note_data({id, 0, title, {}, 0, {},}) {
+Note::Note(Id id, const std::string& title, Id owner_id) : m_note_data({id, title, {}, 0, owner_id}) {
 }
 
-Note::Note(Id id, const std::string& title, const std::string& text) : m_note_data({id, 0, title, text, 0, {}}) {
+Note::Note(Id id, const std::string& title, const std::string& text, Id version) : m_note_data({id, title, text, version, 0}) {
 
 }
 

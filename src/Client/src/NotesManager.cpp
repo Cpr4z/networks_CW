@@ -14,6 +14,7 @@ NotesManager::NotesManager(NoteClient* client, QObject* parent)
     connect(m_client, &NoteClient::updateTextSuccess, this, &NotesManager::onUpdateTextSuccess);
     connect(m_client, &NoteClient::updateTextFailed, this, &NotesManager::onUpdateTextFailed);
     connect(m_client, &NoteClient::createSharedNote, this, &NotesManager::onShareNoteNotification);
+    connect(m_client, &NoteClient::createSyncDialog, this, &NotesManager::onCreateSyncDialog);
 }
 
 QAbstractListModel* NotesManager::model() const {
@@ -28,6 +29,10 @@ void NotesManager::createNote(const QString& title) {
         return;
     }
     m_client->sendCreateNoteRequest(title);
+}
+
+void NotesManager::syncNote(int noteId) {
+    m_client->sendSyncNoteRequest(noteId);
 }
 
 void NotesManager::onNoteCreationSuccess(const QString& title, uint32_t noteId, uint32_t ownerId, uint32_t version) {
@@ -54,8 +59,10 @@ void NotesManager::onUpdateTextSuccess(uint32_t note_id, uint32_t user_id) {
 
 }
 
-void NotesManager::onUpdateTextFailed(const QString& reason) {
-
+void NotesManager::onUpdateTextFailed(uint8_t reason) {
+    if (static_cast<int>(reason) == 1) {
+        emit noteUpdateConflict();
+    }
 }
 
 void NotesManager::openNote(int noteId, int version) {
@@ -72,4 +79,12 @@ void NotesManager::shareNoteWithEveryone(int noteId, int version) {
 
 void NotesManager::onShareNoteNotification(uint32_t note_id, const QString& title, uint32_t owner_id, uint32_t version) {
     m_model->addSharedNote(note_id, title, owner_id, version);
+}
+
+void NotesManager::onCreateSyncDialog(const QString& server_text) {
+    emit createSyncDialog(server_text);
+}
+
+void NotesManager::ownerApprove(int noteId, const QString& merged_version) {
+    m_client->sendApproveMergeRequest(noteId, merged_version);
 }

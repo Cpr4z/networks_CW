@@ -23,7 +23,7 @@ public:
 
     uint32_t addUser(const std::string& login, const std::string& password);
     std::expected<uint32_t, AuthError> validateUser(const std::string& login, const std::string& password);
-    uint32_t addNote(uint32_t user_id, const std::string& title);
+    std::pair<uint32_t, uint32_t> addNote(uint32_t user_id, const std::string& title);
     bool isNoteExists(uint32_t user_id, const std::string& title);
     bool isNoteExists(uint32_t user_id, uint32_t note_id);
     std::string getNoteText(uint32_t user_id, uint32_t note_id);
@@ -33,8 +33,14 @@ public:
 
     bool isContainsConflict(uint32_t user_id, uint32_t note_id, uint32_t version);
 
-    // title, text
-    std::pair<std::string, std::string> getNoteInfo(uint32_t note_id, uint32_t user_id);
+    // title, text, version
+    std::tuple<std::string, std::string, uint32_t> getNoteInfo(uint32_t note_id, uint32_t user_id);
+    std::tuple<std::string, std::string, uint32_t> getNoteInfoToSync(uint32_t note_id, uint32_t user_id);
+    void updateVersionForSharedNotes(uint32_t sender_id, uint32_t note_id);
+
+    uint32_t getNoteVersion(uint32_t owner_id, uint32_t note_id);
+
+    uint32_t getOwnerId(uint32_t note_id);
 
 private:
     int m_users_count = 0;

@@ -30,6 +30,8 @@ namespace Protocol {
 
     struct SyncNoteResponse {
         Operation op;
+        uint32_t version;
+        std::string text;
     };
 
     struct OpenNoteResponse {
@@ -52,5 +54,12 @@ namespace Protocol {
     };
 
     struct ShareNoteNotifyResponse {
+    };
+
+    struct ApproveMergeResponse {
+        Operation op;
+        uint8_t status;
+        uint32_t version;
+        std::string new_text;
     };
 }

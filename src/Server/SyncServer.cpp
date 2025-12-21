@@ -174,6 +174,14 @@ void SyncServer::handleGetNotesRequest(int client_fd, const std::vector<uint8_t>
 
 void SyncServer::handleSyncRequest(int client_fd, const std::vector<uint8_t>& buffer) {
     const auto& request = Protocol::decodeSyncRequest(buffer);
+    const auto& [_, text, version] = m_repository->getNoteInfoToSync(request->note_id, request->user_id);
+
+    Protocol::SyncNoteResponse response;
+    response.op = Protocol::Operation::SYNC;
+    response.text = text;
+    response.version = version;
+
+    sendSyncResponse(client_fd, response);
 }
 
 void SyncServer::handleCreateNoteRequest(int client_fd, const std::vector<uint8_t>& buffer) {
@@ -192,8 +200,10 @@ void SyncServer::handleCreateNoteRequest(int client_fd, const std::vector<uint8_
     } else {
         std::cout << "Creating new note" << std::endl;
         response.status = 0;
-        response.note_id = m_repository->addNote(request->user_id, request->note_title);
+        auto result = m_repository->addNote(request->user_id, request->note_title);
+        response.note_id = result.first;
         response.note_title = request->note_title;
+        response.version = result.second;
         std::cout << "After adding new note with title:" << response.note_title << " and id: " << response.note_id << std::endl;
     }
 
@@ -212,6 +222,7 @@ void SyncServer::handleOpenNoteRequest(int client_fd, const std::vector<uint8_t>
         response.note_id = request->note_id;
 //        response.
         response.text = m_repository->getNoteText(request->user_id, request->note_id);
+        response.version = m_repository->getNoteVersion(request->user_id, request->note_id);
     } else {
         std::cout << "Note doesn't exist when trying to open note" << std::endl;
         response.status = 1;
@@ -240,11 +251,13 @@ void SyncServer::handleUpdateTextRequest(int client_fd, const std::vector<uint8_
     // uint32_t user_id, uint32_t note_id, uint32_t version
     if (m_repository->isContainsConflict(request->user_id, request->note_id, request->version)) {
         response.status = 1; // есть конфликты при обновлении
+        std::cerr << "we have conflict after update request" << std::endl;
     } else {
         response.note_id = request->note_id;
         response.status = 0;
         m_repository->updateNoteText(request->note_id, request->user_id, request->text);
     }
+    m_repository->updateVersionForSharedNotes(request->user_id, request->note_id);
     sendUpdateTextResponse(client_fd, response);
 }
 
@@ -260,11 +273,11 @@ void SyncServer::handleShareNoteRequest(int client_fd, const std::vector<uint8_t
     request.note_id = req->note_id;
     request.owner_id = req->user_id;
 
-    const auto& note_info = m_repository->getNoteInfo(req->note_id, req->user_id);
+    const auto& [title, text, version] = m_repository->getNoteInfo(req->note_id, req->user_id);
 
-    request.note_title = note_info.first;
-    // здесь нужно найти заметку у пользователя и расшарить их в репозитории для пользователей
-
+    request.note_title = title;
+    request.version = version;
+//    request.version = m_repository->getNoteVersion(req->user_id, req->note_id);
 
     sendShareNoteNotifyRequest(client_fd, request);
 }
@@ -299,7 +312,9 @@ size_t SyncServer::getMessageLength(Protocol::Operation op,
 //            break;
         }
         case Protocol::Operation::SYNC: {
-            return 0;
+//            uint32_t note_id;
+//            uint32_t user_id;
+            return 2 + 4 + 4;
         }
         case Protocol::Operation::CREATE_NOTE: {
             uint16_t titleLen;
@@ -313,9 +328,9 @@ size_t SyncServer::getMessageLength(Protocol::Operation op,
         }
         case Protocol::Operation::UPDATE_TEXT: {
             uint32_t textLen;
-            std::memcpy(&textLen, buffer.data() + offset + 2 + 4 + 4, sizeof(uint32_t));
-            std::cout << "Update note text message size: " << 2 + 4 + 4 + 4 + textLen << std::endl;
-            return 2 + 4 + 4 + 4 + textLen;
+            std::memcpy(&textLen, buffer.data() + offset + 2 + 4 + 4 + 4, sizeof(uint32_t));
+            std::cout << "Update note text message size: " << 2 + 4 + 4 + 4 + 4 + textLen << std::endl;
+            return 2 + 4 + 4 + 4 + 4 + textLen;
         }
         case Protocol::Operation::SHARE_NOTE: {
             return 2 + 4 + 4;

@@ -62,7 +62,7 @@ bool Repository::isNoteExists(uint32_t user_id, uint32_t note_id) {
     return note != user->second.end();
 }
 
-uint32_t Repository::addNote(uint32_t user_id, const std::string& title) {
+std::pair<uint32_t, uint32_t> Repository::addNote(uint32_t user_id, const std::string& title) {
     const auto& user = std::ranges::find_if(m_notes_map, [&](const auto& item){
         return item.first->getId() == user_id;
     });
@@ -70,14 +70,16 @@ uint32_t Repository::addNote(uint32_t user_id, const std::string& title) {
     if (user == m_notes_map.end()) {
         std::cerr << "Error while adding new note from user" << std::endl;
         std::cerr << "There is not user with id: " << user_id << std::endl;
-        return 0;
+        return {};
     }
 
     const uint32_t newNoteId = ++m_notes_count;
 
-    user->second.emplace_back(std::make_shared<Note>(newNoteId, title));
+    const auto new_note = std::make_shared<Note>(newNoteId, title, user_id);
+    new_note->incrementVersion();
+    user->second.emplace_back(new_note);
 
-    return newNoteId;
+    return {newNoteId, new_note->getVersion()};
 }
 
 std::string Repository::getNoteText(uint32_t user_id, uint32_t note_id) {
@@ -126,7 +128,7 @@ void Repository::updateNoteText(uint32_t note_id, uint32_t user_id, const std::s
     (*note)->setText(text);
 }
 
-std::pair<std::string, std::string> Repository::getNoteInfo(uint32_t note_id, uint32_t user_id) {
+std::tuple<std::string, std::string, uint32_t>  Repository::getNoteInfo(uint32_t note_id, uint32_t user_id) {
     auto user = std::ranges::find_if(m_notes_map, [&](const auto& item){
         return item.first->getId() == user_id;
     });
@@ -146,19 +148,20 @@ std::pair<std::string, std::string> Repository::getNoteInfo(uint32_t note_id, ui
         return {};
     }
 
-    return {(*note)->getTitle(), (*note)->getText()};
+    return {(*note)->getTitle(), (*note)->getText(), (*note)->getVersion()};
+//    return {(*note)->getTitle(), (*note)->getText()};
 }
 
 void Repository::shareNoteToAllUsers(uint32_t owner_id, uint32_t note_id) {
-    auto note_info = getNoteInfo(note_id, owner_id);
-    if (note_info.first.empty()) {
+    const auto& [title, text, version] = getNoteInfo(note_id, owner_id);
+    if (title.empty()) {
         std::cerr << "Error: Note not found for sharing. Owner id: " << owner_id
                   << ", Note id: " << note_id << std::endl;
         return;
     }
 
-    const std::string& title = note_info.first;
-    const std::string& text = note_info.second;
+//    const std::string& title = note_info.first;
+//    const std::string& text = note_info.second;
 
     std::cout << "Sharing note title: " << title << std::endl;
     std::cout << "Sharing note text: " << text << std::endl;
@@ -184,7 +187,7 @@ void Repository::shareNoteToAllUsers(uint32_t owner_id, uint32_t note_id) {
         // Если заметки еще нет, добавляем ее
         if (!note_already_exists) {
             // Создаем новую заметку для текущего пользователя
-            notes_vector.emplace_back(std::make_shared<Note>(note_id, title, text));
+            notes_vector.emplace_back(std::make_shared<Note>(note_id, title, text, version));
 
             std::cout << "Shared note '" << title << "' to user with id: "
                       << current_user_id << std::endl;
@@ -214,4 +217,90 @@ bool Repository::isContainsConflict(uint32_t user_id, uint32_t note_id, uint32_t
     }
 
     return (*note)->getVersion() != version;
+}
+
+uint32_t Repository::getNoteVersion(uint32_t user_id, uint32_t note_id) {
+    auto user = std::ranges::find_if(m_notes_map, [&](const auto& item){
+        return item.first->getId() == user_id;
+    });
+
+    if (user == m_notes_map.end()) {
+        std::cerr << "Error while checking conflicts about note with id: " << note_id << std::endl;
+//        std::cerr << "with version: " << version << std::endl;
+        std::cerr << "from user with id: " << user_id << std::endl;
+        return 0;
+    }
+
+    auto note = std::ranges::find_if(user->second, [&](const auto& item){
+        return item->getId() == note_id;
+    });
+
+    if (note == user->second.end()) {
+        std::cerr << "Error while updating note text with id - " << note_id << " for user with id - " << user_id << std::endl;
+        return 0;
+    }
+    return (*note)->getVersion();
+}
+
+void Repository::updateVersionForSharedNotes(uint32_t sender_id, uint32_t note_id) {
+    auto user = std::ranges::find_if(m_notes_map, [&](const auto& item){
+        return item.first->getId() == sender_id;
+    });
+
+    if (user == m_notes_map.end()) {
+        std::cerr << "Repository::updateVersionForSharedNotes 1 error" << std::endl;
+        return;
+    }
+
+    auto note = std::ranges::find_if(user->second, [&](const auto& item){
+        return item->getId() == note_id;
+    });
+
+    if (note == user->second.end()) {
+        std::cerr << "Repository::updateVersionForSharedNotes 2 error" << std::endl;
+        return;
+    }
+
+    Id note_version = (*note)->getVersion();
+    const std::string& text = (*note)->getText();
+
+    for (auto& [note_user, notes] : m_notes_map) {
+        if (note_user->getId() == sender_id) {
+            continue;
+        }
+
+        for (auto& user_note : notes) {
+            if (user_note->getId() == note_id) {
+                std::cout << "Note with id " << note_id << " for user " << note_user->getId() << " was updated to version " << note_version << std::endl;
+                user_note->setText(text);
+                user_note->setVersion(note_version);
+            }
+        }
+    }
+}
+
+std::tuple<std::string, std::string, uint32_t> Repository::getNoteInfoToSync(uint32_t note_id, uint32_t sync_user_id) {
+    for (const auto& [user, notes] : m_notes_map) {
+        if (user->getId() == sync_user_id) {
+            continue;
+        }
+
+        for (const auto& note : notes) {
+            if (note->getId() == note_id) {
+                return {note->getTitle(), note->getText(), note->getVersion()};
+            }
+        }
+    }
+    return {};
+}
+
+uint32_t Repository::getOwnerId(uint32_t note_id) {
+    for (const auto& [user, notes] : m_notes_map) {
+        for (const auto& note : notes) {
+            if (note->getOwnerId() != 0) {
+                note->getOwnerId();
+            }
+        }
+    }
+    return 0;
 }

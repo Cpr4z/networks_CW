@@ -158,6 +158,7 @@ ApplicationWindow {
                 property bool isShared: model.isShared
                 property string title: model.title
                 property int ownerId: model.ownerId
+                property int version: model.version
             }
 
             Component {
@@ -215,7 +216,7 @@ ApplicationWindow {
                         // Кнопка открытия
                         Button {
                             text: "Открыть"
-                            onClicked: notesManager.openNote(noteId, localVersion)
+                            onClicked: notesManager.openNote(noteId, version)
 
                             background: Rectangle {
                                 color: parent.hovered ?
@@ -236,7 +237,7 @@ ApplicationWindow {
                         onClicked: () => {
                             // console.log("Trying to open note with id", id);
                             console.log("Trying to open note with id", noteId);
-                            notesManager.openNote(noteId, localVersion);
+                            notesManager.openNote(noteId, version);
                         }
 
                         onPressAndHold: {
@@ -263,7 +264,7 @@ ApplicationWindow {
                             text: "Поделиться со всеми"
                             onTriggered: {
                                 console.log("Sharing note:", noteId);
-                                notesManager.shareNoteWithEveryone(noteId, localVersion);
+                                notesManager.shareNoteWithEveryone(noteId, version);
                             }
                         }
 
@@ -380,7 +381,6 @@ ApplicationWindow {
         function onNoteOpened(noteId, version, text) {
             var title = notesManager.model.getTitleById(noteId);
             var isShared = notesManager.model.isNoteShared(noteId);
-            // console.log("Opening note:", noteId, "Title:", title, "Shared:", notesManager.model.isSharedByIndex?.(noteId));
 
             var component = Qt.createComponent("qrc:/qml/NoteEditor.qml")
             if (component.status === Component.Ready) {
