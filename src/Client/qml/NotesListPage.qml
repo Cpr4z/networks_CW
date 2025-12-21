@@ -9,16 +9,14 @@ ApplicationWindow {
     height: 500
     title: "Мои заметки"
 
-    // Свойства для управления отображением
     property bool showOnlyPersonal: false
     property bool showOnlyShared: false
-    property int currentFilter: 0  // 0: все, 1: личные, 2: общие
+    property int currentFilter: 0
 
-    // Функция для проверки, должен ли элемент отображаться
     function shouldShowItem(isShared) {
-        if (currentFilter === 0) return true;  // все
-        if (currentFilter === 1) return !isShared;  // только личные
-        if (currentFilter === 2) return isShared;   // только общие
+        if (currentFilter === 0) return true;
+        if (currentFilter === 1) return !isShared;
+        if (currentFilter === 2) return isShared;
         return true;
     }
 
@@ -27,7 +25,6 @@ ApplicationWindow {
         anchors.margins: 16
         spacing: 10
 
-        // Заголовок и статистика
         RowLayout {
             Layout.fillWidth: true
 
@@ -39,7 +36,6 @@ ApplicationWindow {
 
             Item { Layout.fillWidth: true }
 
-            // Статистика
             Row {
                 spacing: 15
 
@@ -55,12 +51,10 @@ ApplicationWindow {
             }
         }
 
-        // Фильтры
         RowLayout {
             Layout.fillWidth: true
             spacing: 5
 
-            // Кнопки фильтров
             ButtonGroup {
                 id: filterGroup
                 buttons: filterRow.children
@@ -110,10 +104,9 @@ ApplicationWindow {
 
             Item { Layout.fillWidth: true }
 
-            // Кнопка загрузки общих заметок
             Button {
                 text: "🔄 Общие"
-                visible: currentFilter !== 1  // Не показываем когда фильтр "Личные"
+                visible: currentFilter !== 1
                 onClicked: notesManager.loadSharedNotes()
 
                 ToolTip.visible: hovered
@@ -128,14 +121,12 @@ ApplicationWindow {
             }
         }
 
-        // Разделитель
         Rectangle {
             Layout.fillWidth: true
             height: 1
             color: "lightgray"
         }
 
-        // Список заметок
         ListView {
             id: list
             Layout.fillWidth: true
@@ -144,7 +135,6 @@ ApplicationWindow {
             clip: true
             spacing: 5
 
-            // Делегат с условным отображением
             delegate: Loader {
                 width: list.width
                 height: shouldShowItem(isShared) ? 50 : 0
@@ -172,7 +162,6 @@ ApplicationWindow {
                     border.color: isShared ? "lightblue" : "lightgray"
                     radius: 4
 
-                    // Разный фон в зависимости от типа
                     color: {
                         if (isShared) {
                             return ownerId === 0 ? "#f0f8ff" : "#fff8f0"; // Голубой если моя, бежевый если чужая
@@ -185,13 +174,11 @@ ApplicationWindow {
                         anchors.margins: 10
                         spacing: 10
 
-                        // Иконка типа заметки
                         Text {
                             text: isShared ? "👥" : "📝"
                             font.pixelSize: 16
                         }
 
-                        // Заголовок
                         Text {
                             Layout.fillWidth: true
                             text: title
@@ -201,7 +188,6 @@ ApplicationWindow {
                             color: isShared ? "blue" : "black"
                         }
 
-                        // Индикатор владельца для общих заметок
                         Text {
                             text: {
                                 if (!isShared) return "";
@@ -213,7 +199,6 @@ ApplicationWindow {
                             visible: isShared
                         }
 
-                        // Кнопка открытия
                         Button {
                             text: "Открыть"
                             onClicked: notesManager.openNote(noteId, version)
@@ -229,34 +214,27 @@ ApplicationWindow {
                         }
                     }
 
-                    // Контекстное меню по правому клику или долгому нажатию
                     MouseArea {
                         anchors.fill: parent
                         acceptedButtons: Qt.LeftButton | Qt.RightButton
 
                         onClicked: () => {
-                            // console.log("Trying to open note with id", id);
-                            console.log("Trying to open note with id", noteId);
                             notesManager.openNote(noteId, version);
                         }
 
                         onPressAndHold: {
                             if (isShared) {
                                 if (ownerId === 0) {
-                                    // Это моя расшаренная заметка
                                     sharedByMeMenu.popup();
                                 } else {
-                                    // Это чужая расшаренная заметка
                                     sharedWithMeMenu.popup();
                                 }
                             } else {
-                                // Личная заметка
                                 personalNoteMenu.popup();
                             }
                         }
                     }
 
-                    // Меню для личных заметок
                     Menu {
                         id: personalNoteMenu
 
@@ -276,7 +254,6 @@ ApplicationWindow {
                         }
                     }
 
-                    // Меню для заметок, которыми поделился я
                     Menu {
                         id: sharedByMeMenu
 
@@ -293,7 +270,6 @@ ApplicationWindow {
                         }
                     }
 
-                    // Меню для заметок, которыми поделились со мной
                     Menu {
                         id: sharedWithMeMenu
 
@@ -310,7 +286,6 @@ ApplicationWindow {
                 }
             }
 
-            // Сообщение если нет заметок по выбранному фильтру
             Label {
                 anchors.centerIn: parent
                 text: {
@@ -328,7 +303,6 @@ ApplicationWindow {
             }
         }
 
-        // Нижняя панель с кнопками
         RowLayout {
             Layout.fillWidth: true
             spacing: 10
@@ -347,7 +321,6 @@ ApplicationWindow {
 
             Item { Layout.fillWidth: true }
 
-            // Информация о фильтре
             Text {
                 text: {
                     var total = list.count;
@@ -374,7 +347,6 @@ ApplicationWindow {
         }
     }
 
-    // Connections
     Connections {
         target: notesManager
 

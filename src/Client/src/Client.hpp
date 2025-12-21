@@ -48,7 +48,7 @@ signals:
     void noteOpenFailed(uint32_t note_id, const QString& reason);
 
     // UPDATE_TEXT
-    void updateTextSuccess(uint32_t note_id, uint32_t user_id);
+    void updateTextSuccess(uint32_t note_id, uint32_t user_id, uint32_t version);
     void updateTextFailed(uint8_t reason);
 
     void createSharedNote(uint32_t note_id, const QString& title, uint32_t user_id, uint32_t version);

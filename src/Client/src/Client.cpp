@@ -87,9 +87,11 @@ void NoteClient::sendSyncNoteRequest(uint32_t note_id) {
 }
 
 void NoteClient::sendApproveMergeRequest(uint32_t noteId, const QString& merged_version) {
-    Protocol::
+    std::cout << "Send approve merge request" << std::endl;
+    Protocol::ApproveMergeRequest req = { noteId, m_user_id, static_cast<uint8_t>(1), static_cast<uint8_t>(2), merged_version.toStdString() };
+    std::vector<uint8_t> requestData = Protocol::encodeApproveMergeRequest(req);
+    m_socket.write(reinterpret_cast<char*>(requestData.data()), requestData.size());
 }
-
 
 void NoteClient::handleAuthResponse(const std::vector<uint8_t>& buffer) {
     const auto& response_opt = Protocol::decodeAuthResponse(buffer);
@@ -163,9 +165,6 @@ void NoteClient::handleOpenNoteResponse(const std::vector<uint8_t>& buffer) {
     const auto& response_opt = Protocol::decodeOpenNoteResponse(buffer);
     if (response_opt.has_value()) {
         const auto& response = response_opt.value();
-//        uint32_t note_id;
-//        std::string title;
-//        std::string text;
         std::cout << "Open note status response: " << static_cast<int>(response.status) << std::endl;
         std::cout << "Opened note id is: " << response.note_id << std::endl;
         std::cout << "Opened note title: " << response.title << std::endl;
@@ -187,7 +186,8 @@ void NoteClient::handleUpdateTextResponse(const std::vector<uint8_t>& buffer) {
 //        std::cout << "Id of update text note: " << response.note_id << std::endl;
         if (response.status == 0) {
             std::cout << "Id of update text note: " << response.note_id << std::endl;
-            emit updateTextSuccess(response.note_id, m_user_id);
+            std::cout << "New version of note is: " << response.version << std::endl;
+            emit updateTextSuccess(response.note_id, m_user_id, response.version);
         } else {
             std::cerr << "We have some conflicts after attempt to save changes" << std::endl;
             emit updateTextFailed(response.status);

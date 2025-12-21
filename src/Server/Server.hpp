@@ -51,7 +51,7 @@ private:
     void sendOpenNoteResponse(int client_fd, const Protocol::OpenNoteResponse& response);
     void sendUpdateTextResponse(int client_fd, const Protocol::UpdateTextResponse& response);
     void sendShareNoteResponse(int client_fd, const Protocol::ShareNoteResponse& response);
-    void sendApproveMergeResponse(int client_fd, const Protocol::ApproveMergeResponse& response);
+    void sendApproveMergeResponse(int client_fd, int type, const Protocol::ApproveMergeResponse& response);
 
 
     void sendShareNoteNotifyRequest(int client_fd, const Protocol::ShareNoteNotifyRequest& request);
@@ -66,10 +66,10 @@ public:
     void run();
     void stop();
 
-
 private:
     std::mutex m_clients_mutex;
     std::unordered_set<int> m_connected_clients;
+    std::unordered_map<int, int> m_clients; // user_id -> client_fd
     RepositoryPtr m_repository;
 };
 

@@ -14,36 +14,21 @@ ApplicationWindow {
     property string initialTitle: ""
     property string initialText: ""
     property bool isNoteShared: false
-    property int localVersion: 0  // Локальная версия заметки
-    property int serverVersion: 0 // Версия на сервере
-    property bool conflictDetected: false // Флаг конфликта
+    property int localVersion: 0
+    property int serverVersion: 0
+    property bool conflictDetected: false
 
-    // Флаг изменений для предупреждения при закрытии
     property bool hasUnsavedChanges: false
 
-    // Сравниваем текущий текст с исходным
     function checkForChanges() {
         hasUnsavedChanges = (titleField.text !== initialTitle || textArea.text !== initialText)
     }
 
-    // Сохраняем заметку
     function saveNote() {
         if (noteId === -1) return
-
-        // if (localVersion < serverVersion) {
-        //     console.log(localVersion);
-        //     console.log(serverVersion);
-        //     conflictDetected = true
-        //     conflictDialog.localContent = textArea.text
-        //     conflictDialog.serverVersion = serverVersion
-        //     conflictDialog.open()
-        //     return
-        // }
-
         notesManager.updateNote(noteId, textArea.text, localVersion)
         hasUnsavedChanges = false
 
-        // Обновляем заголовок окна
         noteWindow.title = titleField.text
     }
 
@@ -51,7 +36,6 @@ ApplicationWindow {
         RowLayout {
             anchors.fill: parent
 
-            // Кнопка назад/закрыть
             ToolButton {
                 text: "←"
                 font.pixelSize: 18
@@ -67,7 +51,6 @@ ApplicationWindow {
                 ToolTip.text: "Назад к списку заметок"
             }
 
-            // Название заметки (редактируемое)
             TextField {
                 id: titleField
                 Layout.fillWidth: true
@@ -79,12 +62,10 @@ ApplicationWindow {
 
                 onTextChanged: {
                     checkForChanges()
-                    // Обновляем заголовок окна в реальном времени
                     noteWindow.title = text ? text : "Без названия"
                 }
             }
 
-            // Кнопка сохранения
             ToolButton {
                 id: saveButton
                 text: "💾"
@@ -111,7 +92,6 @@ ApplicationWindow {
                 }
             }
 
-            // Кнопка дополнительных действий
             ToolButton {
                 text: "⋮"
                 font.pixelSize: 18
@@ -130,22 +110,16 @@ ApplicationWindow {
 
                     MenuItem {
                         text: isNoteShared ? "👥 Расшарена" : "👤 Поделиться со всеми"
-                        enabled: !isNoteShared  // Неактивна если уже расшарена
+                        enabled: !isNoteShared
                         onTriggered: {
                             shareConfirmDialog.open();
                         }
                     }
-
-                    // MenuItem {
-                    //     text: "Поделиться заметкой..."
-                    //     onTriggered: shareDialog.open()  // ← Открываем диалог расшаривания
-                    // }
                 }
             }
         }
     }
 
-    // Основная область с текстом
     ScrollView {
         anchors.fill: parent
         anchors.margins: 16
@@ -164,7 +138,6 @@ ApplicationWindow {
         }
     }
 
-    // Статус бар внизу
     footer: ToolBar {
         height: 30
 
@@ -173,7 +146,6 @@ ApplicationWindow {
             anchors.leftMargin: 16
             anchors.rightMargin: 16
 
-            // Индикатор сохранения
             Text {
                 id: statusText
                 text: hasUnsavedChanges ? "● Не сохранено" : "✓ Сохранено"
@@ -181,7 +153,6 @@ ApplicationWindow {
                 font.pixelSize: 12
             }
 
-            // Счетчик символов
             Text {
                 text: textArea.text.length + " символов"
                 font.pixelSize: 12
@@ -190,7 +161,6 @@ ApplicationWindow {
 
             Item { Layout.fillWidth: true }
 
-            // Дата последнего изменения
             Text {
                 text: "Изменено: только что"
                 font.pixelSize: 12
@@ -199,7 +169,6 @@ ApplicationWindow {
         }
     }
 
-    // Диалог при закрытии с несохраненными изменениями
     Dialog {
         id: unsavedChangesDialog
         anchors.centerIn: parent
@@ -272,14 +241,6 @@ ApplicationWindow {
             hasUnsavedChanges = false
         }
 
-        // onOverwriteServer: {
-        //     // Пользователь выбрал перезаписать сервер
-        //     conflictDetected = false
-        //     localVersion++ // Увеличиваем версию
-        //     notesManager.forceUpdateNote(noteId, content, localVersion)
-        //     hasUnsavedChanges = false
-        // }
-
         onMergeManually: {
             // Пользователь выбрал ручное слияние
             conflictDetected = false
@@ -345,6 +306,10 @@ ApplicationWindow {
             conflictDialog.serverContent = server_text;
             conflictDialog.open()
         }
+
+        function onAfterTextUpdated(version) {
+            localVersion = version;
+        }
     }
 
     // Connections {
@@ -372,7 +337,6 @@ ApplicationWindow {
         // }
     // }
 
-    // Горячие клавиши - ИСПРАВЛЕНО
     Shortcut {
         sequences: [StandardKey.Save, "Ctrl+S"]
         onActivated: saveNote()
@@ -389,13 +353,11 @@ ApplicationWindow {
         }
     }
 
-    // При открытии фокусируемся на тексте
     Component.onCompleted: {
         textArea.forceActiveFocus()
         textArea.cursorPosition = textArea.text.length
     }
 
-    // Предупреждение при закрытии окна
     onClosing: {
         if (hasUnsavedChanges) {
             close.accepted = false

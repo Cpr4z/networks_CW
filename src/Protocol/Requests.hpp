@@ -62,6 +62,8 @@ namespace Protocol {
     struct ApproveMergeRequest {
         uint32_t note_id;
         uint32_t user_id;
+        uint8_t type;
+        uint8_t status;
         std::string merged_text;
     };
 }

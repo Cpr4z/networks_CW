@@ -47,6 +47,7 @@ namespace Protocol {
         Operation op;
         uint8_t status;
         uint32_t note_id;
+        uint32_t version;
     };
 
     struct ShareNoteResponse {

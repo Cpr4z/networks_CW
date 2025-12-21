@@ -17,7 +17,6 @@ Dialog {
     property int serverVersion
 
     signal acceptServer(int noteId)
-    // signal overwriteServer(int noteId, string content)
     signal mergeManually(int noteId, string content)
 
     ColumnLayout {
@@ -25,7 +24,6 @@ Dialog {
         anchors.margins: 16
         spacing: 12
 
-        // --- Заголовок ---
         Text {
             text: "Заметка была изменена другим пользователем"
             font.pixelSize: 18
@@ -40,13 +38,11 @@ Dialog {
             Layout.alignment: Qt.AlignHCenter
         }
 
-        // --- Контент ---
         RowLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
             spacing: 10
 
-            // Серверная версия
             ColumnLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
@@ -64,7 +60,6 @@ Dialog {
                 }
             }
 
-            // Локальная версия
             ColumnLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
@@ -83,7 +78,6 @@ Dialog {
             }
         }
 
-        // --- Кнопки ---
         RowLayout {
             Layout.fillWidth: true
             spacing: 10
@@ -96,14 +90,6 @@ Dialog {
                     dialog.close()
                 }
             }
-
-            // Button {
-            //     text: "Перезаписать сервер"
-            //     onClicked: {
-            //         dialog.overwriteServer(noteId, localContent)
-            //         dialog.close()
-            //     }
-            // }
 
             Button {
                 text: "Сохранить объединённую"

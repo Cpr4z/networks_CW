@@ -106,8 +106,19 @@ void Server::sendShareNoteNotifyRequest(int client_fd, const Protocol::ShareNote
     broadcastToAllClients(client_fd, notify_buffer);
 }
 
-void Server::sendApproveMergeResponse(int client_fd, const Protocol::ApproveMergeResponse& response) {
+void Server::sendApproveMergeResponse(int client_fd, int type, const Protocol::ApproveMergeResponse& response) {
+    if (type == 1) {
+        // отправляем пользователю с client_fd запрос на согласование изменений
+        std::vector<uint8_t> response_buffer = Protocol::encodeApproveMergeResponse(response);
+        ssize_t sent = send(client_fd, response_buffer.data(), response_buffer.size(), 0);
+        if (sent < 0) {
+            perror("send");
+        } else {
+            std::cout << "Sent response to client " << client_fd << std::endl;
+        }
+    } else if (type == 2) {
 
+    }
 }
 
 void Server::handleAuthRequest(int client_fd, const std::vector<uint8_t>& buffer) {
@@ -187,6 +198,8 @@ void Server::handleCreateNoteRequest(int client_fd, const std::vector<uint8_t>& 
         response.status = 0;
         auto result = m_repository->addNote(request->user_id, request->note_title);
         response.note_id = result.first;
+        m_clients[client_fd] = static_cast<int>(request->user_id);
+//        m_note_owners_map[static_cast<int>(response.note_id)] = client_fd;
         response.note_title = request->note_title;
         response.version = result.second;
         std::cout << "After adding new note with title:" << response.note_title << " and id: " << response.note_id << std::endl;
@@ -231,6 +244,7 @@ void Server::handleUpdateTextRequest(int client_fd, const std::vector<uint8_t>& 
         response.note_id = request->note_id;
         response.status = 0;
         m_repository->updateNoteText(request->note_id, request->user_id, request->text);
+        response.version = m_repository->getNoteVersion(request->user_id, request->note_id);
     }
     m_repository->updateVersionForSharedNotes(request->user_id, request->note_id);
     sendUpdateTextResponse(client_fd, response);
@@ -258,7 +272,36 @@ void Server::handleShareNoteRequest(int client_fd, const std::vector<uint8_t>& b
 }
 
 void Server::handleApproveMergeRequest(int client_fd, const std::vector<uint8_t>& buffer) {
+    const auto& req = Protocol::decodeApproveMergeRequest(buffer);
+    std::cout << "Got approve merge request" << std::endl;
+    int type = static_cast<int>(req->type);
+    // req->status == 1 -> отправляется запрос на согласование изменений при конфликте
+    // req->status == 2 -> отправляется результат согласования изменений с владельцем заметки
+    if (type == 1) {
+        // в этом блоке статус по умолчанию 2
+        Id note_owner_id = m_repository->getOwnerId(req->note_id);
+        int client_fd_owner = m_clients[static_cast<int>(note_owner_id)];
 
+        Protocol::ApproveMergeResponse response;
+        response.op = Protocol::Operation::APPROVE_MERGE;
+        response.status = 1; // означает, что нужно показать диалог подтверждения изменений
+        response.new_text = req->merged_text;
+        response.note_id = req->note_id;
+        sendApproveMergeResponse(client_fd_owner, type, response);
+    } else if (type == 2) {
+        Protocol::ApproveMergeResponse response;
+        response.op = Protocol::Operation::APPROVE_MERGE;
+        // если status == 0, значит владелец заметки принял изменения
+        if (req->status == 0) {
+
+        }
+        // если status == 1, значит владелец заметки не принял изменения
+        else if (req->status == 1) {
+
+            Id sender_id = m_clients[static_cast<int>(req->user_id)];
+            sendApproveMergeResponse(static_cast<int>(sender_id), type, response);
+        }
+    }
 }
 
 void Server::handleShareNoteNotifyRequest(int client_fd, const std::vector<uint8_t>& buffer) {
@@ -312,9 +355,14 @@ size_t Server::getMessageLength(Protocol::Operation op,
             return 2 + 4 + 4;
         }
         case Protocol::Operation::APPROVE_MERGE: {
+//            uint32_t note_id;
+//            uint32_t user_id;
+//            uint8_t type;
+//            uint8_t status;
+//            std::string merged_text;
             uint32_t textLen;
-            std::memcpy(&textLen, buffer.data() + offset + 2 + 4 + 4, sizeof(textLen));
-            return 2 + 4 + 4 + 4 + textLen;
+            std::memcpy(&textLen, buffer.data() + offset + 2 + 4 + 4 + 1 + 1, sizeof(textLen));
+            return 2 + 4 + 4 + 4 + 1 + 1 + textLen;
         }
         default:
             std::cerr << "Unknown operation: " << static_cast<int>(op) << std::endl;

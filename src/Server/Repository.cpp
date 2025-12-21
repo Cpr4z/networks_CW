@@ -22,9 +22,7 @@ uint32_t Repository::addUser(const std::string& login, const std::string& passwo
     const uint32_t newUserId = ++m_users_count;
     const auto newUser = std::make_shared<User>(newUserId, login, password);
     m_users_map[newUserId] = newUser;
-//    m_notes_map.emplace();
     m_notes_map[newUser];
-//    m_notes_map.insert(newUser, {});
     return m_users_count;
 }
 
@@ -149,7 +147,6 @@ std::tuple<std::string, std::string, uint32_t>  Repository::getNoteInfo(uint32_t
     }
 
     return {(*note)->getTitle(), (*note)->getText(), (*note)->getVersion()};
-//    return {(*note)->getTitle(), (*note)->getText()};
 }
 
 void Repository::shareNoteToAllUsers(uint32_t owner_id, uint32_t note_id) {
@@ -160,22 +157,16 @@ void Repository::shareNoteToAllUsers(uint32_t owner_id, uint32_t note_id) {
         return;
     }
 
-//    const std::string& title = note_info.first;
-//    const std::string& text = note_info.second;
-
     std::cout << "Sharing note title: " << title << std::endl;
     std::cout << "Sharing note text: " << text << std::endl;
 
-    // Проходим по всем пользователям кроме владельца
     for (auto& [user_ptr, notes_vector] : m_notes_map) {
         uint32_t current_user_id = user_ptr->getId();
 
-        // Пропускаем владельца
         if (current_user_id == owner_id) {
             continue;
         }
 
-        // Проверяем, нет ли уже такой заметки у пользователя
         bool note_already_exists = false;
         for (const auto& note_ptr : notes_vector) {
             if (note_ptr->getId() == note_id) {
@@ -184,9 +175,7 @@ void Repository::shareNoteToAllUsers(uint32_t owner_id, uint32_t note_id) {
             }
         }
 
-        // Если заметки еще нет, добавляем ее
         if (!note_already_exists) {
-            // Создаем новую заметку для текущего пользователя
             notes_vector.emplace_back(std::make_shared<Note>(note_id, title, text, version));
 
             std::cout << "Shared note '" << title << "' to user with id: "
@@ -226,7 +215,6 @@ uint32_t Repository::getNoteVersion(uint32_t user_id, uint32_t note_id) {
 
     if (user == m_notes_map.end()) {
         std::cerr << "Error while checking conflicts about note with id: " << note_id << std::endl;
-//        std::cerr << "with version: " << version << std::endl;
         std::cerr << "from user with id: " << user_id << std::endl;
         return 0;
     }

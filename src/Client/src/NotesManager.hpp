@@ -30,7 +30,7 @@ private slots:
     void onNoteOpenSuccess(uint32_t note_id, uint32_t version, const QString& text);
     void onNoteOpenFailed(uint32_t note_id, const QString& reason);
 
-    void onUpdateTextSuccess(uint32_t note_id, uint32_t user_id);
+    void onUpdateTextSuccess(uint32_t note_id, uint32_t user_id, uint32_t version);
     void onUpdateTextFailed(uint8_t reason);
 
     void onShareNoteNotification(uint32_t note_id, const QString& title, uint32_t owner_id, uint32_t version);
@@ -42,6 +42,7 @@ signals:
     void noteOpenError(int noteId, const QString& error);
     void noteUpdateConflict();
     void createSyncDialog(const QString& server_text);
+    void afterTextUpdated(int version);
 
 
 private:

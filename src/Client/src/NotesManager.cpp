@@ -55,8 +55,8 @@ void NotesManager::onNoteOpenFailed(uint32_t note_id, const QString& reason) {
     emit noteOpenError(static_cast<int>(note_id), reason);
 }
 
-void NotesManager::onUpdateTextSuccess(uint32_t note_id, uint32_t user_id) {
-
+void NotesManager::onUpdateTextSuccess(uint32_t note_id, uint32_t user_id, uint32_t version) {
+    emit afterTextUpdated(static_cast<int>(version));
 }
 
 void NotesManager::onUpdateTextFailed(uint8_t reason) {
@@ -86,5 +86,6 @@ void NotesManager::onCreateSyncDialog(const QString& server_text) {
 }
 
 void NotesManager::ownerApprove(int noteId, const QString& merged_version) {
+    std::cout << "NotesManager::ownerApprove called" << std::endl;
     m_client->sendApproveMergeRequest(noteId, merged_version);
 }

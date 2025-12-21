@@ -454,34 +454,6 @@ namespace Protocol {
         return buffer;
     }
 
-//    std::vector<uint8_t> encodeCreateNoteResponse(const CreateNoteResponse& resp) {
-//        const uint16_t titleLen = static_cast<uint16_t>(resp.note_title.size());
-//
-//        // 2 (op) + 1 (status) + 4 (note_id) + 2 (titleLen) + title
-//        std::vector<uint8_t> buffer(2 + 1 + 4 + 2 + titleLen);
-//        uint8_t* ptr = buffer.data();
-//
-//        // Преобразуем в сетевой порядок байт
-//        uint16_t op = htons(static_cast<uint16_t>(resp.op));
-//        std::memcpy(ptr, &op, sizeof(op));
-//        ptr += sizeof(op);
-//
-//        std::memcpy(ptr, &resp.status, sizeof(resp.status));
-//        ptr += sizeof(resp.status);
-//
-//        uint32_t noteId = htonl(resp.note_id);
-//        std::memcpy(ptr, &noteId, sizeof(noteId));
-//        ptr += sizeof(noteId);
-//
-//        uint16_t titleLenNet = htons(titleLen);
-//        std::memcpy(ptr, &titleLenNet, sizeof(titleLenNet));
-//        ptr += sizeof(titleLenNet);
-//
-//        std::memcpy(ptr, resp.note_title.data(), titleLen);
-//
-//        return buffer;
-//    }
-
     std::optional<CreateNoteRequest> decodeCreateNoteRequest(const std::vector<uint8_t>& buffer) {
         constexpr size_t MIN_SIZE =
                 sizeof(uint16_t) +   // op
@@ -494,7 +466,6 @@ namespace Protocol {
 
         const uint8_t* ptr = buffer.data();
 
-        // 1️⃣ Код операции
         uint16_t op;
         std::memcpy(&op, ptr, sizeof(uint16_t));
         ptr += sizeof(uint16_t);
@@ -503,22 +474,18 @@ namespace Protocol {
             return std::nullopt;
         }
 
-        // 2️⃣ user_id
         uint32_t userId;
         std::memcpy(&userId, ptr, sizeof(uint32_t));
         ptr += sizeof(uint32_t);
 
-        // 3️⃣ длина заголовка
         uint16_t titleLen;
         std::memcpy(&titleLen, ptr, sizeof(uint16_t));
         ptr += sizeof(uint16_t);
 
-        // Проверка размера
         if (buffer.size() < MIN_SIZE + titleLen) {
             return std::nullopt;
         }
 
-        // 4️⃣ заголовок заметки
         std::string title(
                 reinterpret_cast<const char*>(ptr),
                 titleLen
@@ -783,7 +750,7 @@ namespace Protocol {
     }
 
     std::vector<uint8_t> encodeUpdateTextResponse(const UpdateTextResponse& resp) {
-        std::vector<uint8_t> buffer(2 + 1 + 4);
+        std::vector<uint8_t> buffer(2 + 1 + 4 + 4);
         uint8_t* ptr = buffer.data();
 
         // Код операции
@@ -797,6 +764,9 @@ namespace Protocol {
 
         // ID заметки
         std::memcpy(ptr, &resp.note_id, sizeof(resp.note_id));
+        ptr += sizeof(resp.note_id);
+
+        std::memcpy(ptr, &resp.version, sizeof(resp.version));
 
         return buffer;
 //        return {};
@@ -889,6 +859,9 @@ namespace Protocol {
 
         // ID заметки
         std::memcpy(&resp.note_id, ptr, sizeof(resp.note_id));
+        ptr += sizeof(resp.note_id);
+
+        std::memcpy(&resp.version, ptr, sizeof(resp.version));
 
         return resp;
 //        return {};
@@ -1073,5 +1046,132 @@ namespace Protocol {
 
     std::optional<ShareNoteNotifyResponse> decodeShareNoteNotifyResponse(const std::vector<uint8_t>& buffer) {
         return {};
+    }
+
+    std::vector<uint8_t> encodeApproveMergeRequest(const ApproveMergeRequest& req) {
+        const uint32_t text_size = static_cast<uint32_t>(req.merged_text.size());
+        std::vector<uint8_t> buffer(2 + 4 + 4 + 1 + 1 + 4 + text_size);
+
+        uint8_t* ptr = buffer.data();
+
+        uint16_t op = static_cast<uint16_t>(Protocol::Operation::APPROVE_MERGE);
+        std::memcpy(ptr, &op, sizeof(op));
+        ptr += sizeof(op);
+
+        // Кодируем note_id (4 байта)
+        std::memcpy(ptr, &req.note_id, sizeof(req.note_id));
+        ptr += sizeof(req.note_id);
+
+        // Кодируем user_id (4 байта)
+        std::memcpy(ptr, &req.user_id, sizeof(req.user_id));
+        ptr += sizeof(req.user_id);
+
+        // Кодируем type (1 байт)
+        std::memcpy(ptr, &req.type, sizeof(req.type));
+        ptr += sizeof(req.type);
+
+        // Кодируем status (1 байт)
+        std::memcpy(ptr, &req.status, sizeof(req.status));
+        ptr += sizeof(req.status);
+
+        // Кодируем длину текста (4 байта)
+        std::memcpy(ptr, &text_size, sizeof(text_size));
+        ptr += sizeof(text_size);
+
+        // Кодируем сам текст
+        std::memcpy(ptr, req.merged_text.data(), text_size);
+
+        return buffer;
+//        return {};
+    }
+
+    std::vector<uint8_t> encodeApproveMergeResponse(const ApproveMergeResponse& resp) {
+        const uint32_t text_size = static_cast<uint32_t>(resp.new_text.size());
+        std::vector<uint8_t> buffer(2 + 1 + 4 + 4 + 4 + text_size);
+
+        uint8_t* ptr = buffer.data();
+
+        uint16_t op = static_cast<uint16_t>(resp.op);
+        std::memcpy(ptr, &op, sizeof(op));
+        ptr += sizeof(op);
+
+        std::memcpy(ptr, &resp.status, sizeof(resp.status));
+        ptr += sizeof(resp.status);
+
+        std::memcpy(ptr, &resp.note_id, sizeof(resp.note_id));
+        ptr += sizeof(resp.note_id);
+
+        std::memcpy(ptr, &resp.version, sizeof(resp.version));
+        ptr += sizeof(resp.version);
+
+        std::memcpy(ptr, &text_size, sizeof(text_size));
+        ptr += sizeof(text_size);
+
+        std::memcpy(ptr, resp.new_text.data(), text_size);
+
+        return buffer;
+//        return {};
+    }
+
+    std::optional<ApproveMergeRequest> decodeApproveMergeRequest(const std::vector<uint8_t>& buffer) {
+        ApproveMergeRequest req;
+        const uint8_t* ptr = buffer.data();
+
+        uint16_t op;
+        std::memcpy(&op, ptr, sizeof(op));
+        ptr += sizeof(op);
+
+        std::memcpy(&req.note_id, ptr, sizeof(req.note_id));
+        ptr += sizeof(req.note_id);
+
+        // Декодируем user_id
+        std::memcpy(&req.user_id, ptr, sizeof(req.user_id));
+        ptr += sizeof(req.user_id);
+
+        // Декодируем type
+        std::memcpy(&req.type, ptr, sizeof(req.type));
+        ptr += sizeof(req.type);
+
+        // Декодируем status
+        std::memcpy(&req.status, ptr, sizeof(req.status));
+        ptr += sizeof(req.status);
+
+        // Декодируем длину текста
+        uint32_t text_size;
+        std::memcpy(&text_size, ptr, sizeof(text_size));
+        ptr += sizeof(text_size);
+
+        req.merged_text.assign(reinterpret_cast<const char*>(ptr), text_size);
+
+        return req;
+//        return {};
+    }
+
+    std::optional<ApproveMergeResponse> decodeApproveMergeResponse(const std::vector<uint8_t>& buffer) {
+        ApproveMergeResponse resp;
+        const uint8_t* ptr = buffer.data();
+
+        uint16_t op;
+        std::memcpy(&op, ptr, sizeof(op));
+        ptr += sizeof(op);
+        resp.op = static_cast<Operation>(op);
+
+        std::memcpy(&resp.status, ptr, sizeof(resp.status));
+        ptr += sizeof(resp.status);
+
+        std::memcpy(&resp.note_id, ptr, sizeof(resp.note_id));
+        ptr += sizeof(resp.note_id);
+
+        std::memcpy(&resp.version, ptr, sizeof(resp.version));
+        ptr += sizeof(resp.version);
+
+        uint32_t text_size;
+        std::memcpy(&text_size, ptr, sizeof(text_size));
+        ptr += sizeof(text_size);
+
+        resp.new_text.assign(reinterpret_cast<const char*>(ptr), text_size);
+
+        return resp;
+//        return {};
     }
 }

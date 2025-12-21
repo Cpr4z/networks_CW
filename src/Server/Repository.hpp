@@ -38,7 +38,7 @@ public:
     std::tuple<std::string, std::string, uint32_t> getNoteInfoToSync(uint32_t note_id, uint32_t user_id);
     void updateVersionForSharedNotes(uint32_t sender_id, uint32_t note_id);
 
-    uint32_t getNoteVersion(uint32_t owner_id, uint32_t note_id);
+    uint32_t getNoteVersion(uint32_t user_id, uint32_t note_id);
 
     uint32_t getOwnerId(uint32_t note_id);
 

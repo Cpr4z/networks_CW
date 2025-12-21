@@ -41,7 +41,8 @@ QHash<int, QByteArray> NotesModel::roleNames() const {
             { IdRole, "noteId" },
             { TitleRole, "title" },
             { IsSharedRole, "isShared"},
-            { OwnerIdRole, "ownerId"}
+            { OwnerIdRole, "ownerId"},
+            { VersionRole, "version"}
     };
 }
 
@@ -81,3 +82,26 @@ bool NotesModel::isNoteShared(int noteId) const {
     }
     return false;
 }
+
+//void NotesModel::updateNoteVersion(uint32_t note_id, uint32_t version) {
+//    auto note = std::ranges::find_if(m_notes, [&](const auto& item){
+//        return item.noteId == note_id;
+//    });
+//
+//    if (note == m_notes.end()) {
+//        std::cerr << "No note found to update version" << std::endl;
+//        return;
+//    }
+//
+//    int oldVersion = note->version;
+//
+//    // Меняем данные
+//    note->version = static_cast<int>(version);
+//
+//    // Находим индекс измененного элемента
+//    int row = std::distance(m_notes.begin(), note);
+//
+//    // Уведомляем модель об изменении
+//    QModelIndex modelIndex = index(row, 0);
+//    emit dataChanged(modelIndex, modelIndex, {VersionRole});
+//}
