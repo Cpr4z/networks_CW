@@ -15,6 +15,7 @@ NotesManager::NotesManager(NoteClient* client, QObject* parent)
     connect(m_client, &NoteClient::updateTextFailed, this, &NotesManager::onUpdateTextFailed);
     connect(m_client, &NoteClient::createSharedNote, this, &NotesManager::onShareNoteNotification);
     connect(m_client, &NoteClient::createSyncDialog, this, &NotesManager::onCreateSyncDialog);
+    connect(m_client, &NoteClient::createOwnerApproveDialog, this, &NotesManager::onCreateOwnerApproveDialog);
 }
 
 QAbstractListModel* NotesManager::model() const {
@@ -85,7 +86,15 @@ void NotesManager::onCreateSyncDialog(const QString& server_text) {
     emit createSyncDialog(server_text);
 }
 
+void NotesManager::onCreateOwnerApproveDialog(uint32_t note_id, uint32_t merge_sender_id, const QString& approve_version) {
+    emit createOwnerApproveDialog(note_id, merge_sender_id, approve_version);
+}
+
 void NotesManager::ownerApprove(int noteId, const QString& merged_version) {
     std::cout << "NotesManager::ownerApprove called" << std::endl;
     m_client->sendApproveMergeRequest(noteId, merged_version);
+}
+
+void NotesManager::ownerApproveResult(int noteId, int merge_sender_id, int merge_result, const QString& merged_text) {
+    m_client->sendOwnerApproveMergeResponse(noteId, merge_sender_id, static_cast<uint8_t>(merge_result), merged_text);
 }

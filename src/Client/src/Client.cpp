@@ -88,8 +88,20 @@ void NoteClient::sendSyncNoteRequest(uint32_t note_id) {
 
 void NoteClient::sendApproveMergeRequest(uint32_t noteId, const QString& merged_version) {
     std::cout << "Send approve merge request" << std::endl;
-    Protocol::ApproveMergeRequest req = { noteId, m_user_id, static_cast<uint8_t>(1), static_cast<uint8_t>(2), merged_version.toStdString() };
+    Protocol::ApproveMergeRequest req = { noteId, m_user_id, merged_version.toStdString() };
     std::vector<uint8_t> requestData = Protocol::encodeApproveMergeRequest(req);
+    m_socket.write(reinterpret_cast<char*>(requestData.data()), requestData.size());
+}
+
+void NoteClient::sendOwnerApproveMergeResponse(uint32_t noteId, uint32_t merge_sender_id, uint8_t result_code, const QString& approved_version) {
+    std::cout << "Send approve owner merge request" << std::endl;
+//    uint32_t note_id;
+//    uint32_t sender_id;
+//    uint8_t status;
+//    std::string approved_text;
+    Protocol::OwnerApproveMergeResponse resp = {Protocol::Operation::OWNER_APPROVE_MERGE, noteId, merge_sender_id, result_code, approved_version.toStdString()};
+    std::vector<uint8_t> requestData = Protocol::encodeOwnerApproveMergeResponse(resp);
+//    std::vector<uint8_t> requestData = Protocol::encodeOwnerApproveMergeRequest(req);
     m_socket.write(reinterpret_cast<char*>(requestData.data()), requestData.size());
 }
 
@@ -215,6 +227,19 @@ void NoteClient::handleShareNoteNotifyRequest(const std::vector<uint8_t>& buffer
     }
 }
 
+void NoteClient::handleOwnerApproveMergeRequest(const std::vector<uint8_t>& buffer) {
+    const auto& request_opt = Protocol::decodeOwnerApproveMergeRequest(buffer);
+    if (request_opt.has_value()) {
+        const auto& request = request_opt.value();
+
+        std::cout << "User with id: " << request.merge_sender_id << std::endl;
+        std::cout << ". Want to share note with id: " << request.note_id << std::endl;
+        std::cout << "And this note has merged text version: " << request.approve_text << std::endl;
+
+        emit createOwnerApproveDialog(request.note_id, request.merge_sender_id, QString::fromStdString(request.approve_text));
+    }
+}
+
 void NoteClient::handleApproveMergeResponse(const std::vector<uint8_t>& buffer) {
     const auto& response_opt = Protocol::decodeApproveMergeResponse(buffer);
     if (response_opt.has_value()) {
@@ -223,6 +248,14 @@ void NoteClient::handleApproveMergeResponse(const std::vector<uint8_t>& buffer) 
         std::cout << "Approve merge note id: " << response.note_id << std::endl;
         std::cout << "Approve merge version id: " << response.version << std::endl;
 
+//        if (response.)
+    }
+}
+
+void NoteClient::handleOwnerApproveMergeResponse(const std::vector<uint8_t>& buffer) {
+    const auto& response_opt = Protocol::decodeOwnerApproveMergeResponse(buffer);
+    if (response_opt.has_value()) {
+        const auto& response = response_opt.value();
     }
 }
 
@@ -277,10 +310,17 @@ void NoteClient::onReadyRead() {
                     std::cout << "Got share note notify response" << std::endl;
                     handleShareNoteNotifyRequest(buffer);
                     break;
+
                 case Protocol::Operation::APPROVE_MERGE:
                     std::cout << "Got approve merge response" << std::endl;
                     handleApproveMergeResponse(buffer);
                     break;
+
+                case Protocol::Operation::OWNER_APPROVE_MERGE:
+                    std::cout << "Got owner approve merge response" << std::endl;
+                    handleOwnerApproveMergeResponse(buffer);
+                    break;
+
                 default:
                     std::cout << "Unknown operation code: " << static_cast<uint16_t>(op) << std::endl;
                     break;

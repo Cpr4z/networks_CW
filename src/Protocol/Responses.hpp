@@ -2,6 +2,8 @@
 
 #include "Operation.hpp"
 
+#include <map>
+
 namespace Protocol {
     struct AuthResponse {
         Operation op;
@@ -17,7 +19,8 @@ namespace Protocol {
 
     struct GetNotesResponse {
         Operation op;
-        // ??
+        // id - title
+        std::map<uint32_t, std::string> notes;
     };
 
     struct CreateNoteResponse {
@@ -59,9 +62,17 @@ namespace Protocol {
 
     struct ApproveMergeResponse {
         Operation op;
-        uint8_t status;
         uint32_t note_id;
         uint32_t version;
+        uint32_t sender_id;
         std::string new_text;
+    };
+
+    struct OwnerApproveMergeResponse {
+        Operation op;
+        uint32_t note_id;
+        uint32_t sender_id;
+        uint8_t status;
+        std::string approved_text;
     };
 }

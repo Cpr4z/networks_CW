@@ -28,7 +28,9 @@ public:
     void sendSyncNoteRequest(uint32_t note_id);
     void sendApproveMergeRequest(uint32_t noteId, const QString& merged_version);
 
-//    void setUsername(const QString& username) { m_username = username; }
+
+    void sendOwnerApproveMergeResponse(uint32_t noteId, uint32_t merge_sender_id, uint8_t result_code, const QString& approved_version);
+
 
 signals:
     // AUTH
@@ -55,6 +57,8 @@ signals:
 
     void createSyncDialog(const QString& server_text);
 
+    void createOwnerApproveDialog(uint32_t note_id, uint32_t merge_sender_id, const QString& approve_version);
+
 private slots:
     void onReadyRead();
 
@@ -68,8 +72,10 @@ private:
     void handleUpdateTextResponse(const std::vector<uint8_t>& buffer);
     void handleShareNoteResponse(const std::vector<uint8_t>& buffer);
     void handleApproveMergeResponse(const std::vector<uint8_t>& buffer);
+    void handleOwnerApproveMergeResponse(const std::vector<uint8_t>& buffer);
 
     void handleShareNoteNotifyRequest(const std::vector<uint8_t>& buffer);
+    void handleOwnerApproveMergeRequest(const std::vector<uint8_t>& buffer);
 
 private:
     uint32_t m_user_id = 0;

@@ -72,4 +72,10 @@ namespace Protocol {
     std::vector<uint8_t> encodeApproveMergeResponse(const ApproveMergeResponse& resp);
     std::optional<ApproveMergeRequest> decodeApproveMergeRequest(const std::vector<uint8_t>& buffer);
     std::optional<ApproveMergeResponse> decodeApproveMergeResponse(const std::vector<uint8_t>& buffer);
+
+    // OWNER_APPROVE_MERGE
+    std::vector<uint8_t> encodeOwnerApproveMergeRequest(const OwnerApproveMergeRequest& req);
+    std::vector<uint8_t> encodeOwnerApproveMergeResponse(const OwnerApproveMergeResponse& resp);
+    std::optional<OwnerApproveMergeRequest> decodeOwnerApproveMergeRequest(const std::vector<uint8_t>& buffer);
+    std::optional<OwnerApproveMergeResponse> decodeOwnerApproveMergeResponse(const std::vector<uint8_t>& buffer);
 };

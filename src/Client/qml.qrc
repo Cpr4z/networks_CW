@@ -5,5 +5,6 @@
         <file>qml/LoginPage.qml</file>
         <file>qml/NotesListPage.qml</file>
         <file>qml/ConflictDialog.qml</file>
+        <file>qml/ApproveMergeDialog.qml</file>
     </qresource>
 </RCC>

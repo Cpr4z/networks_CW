@@ -285,8 +285,11 @@ std::tuple<std::string, std::string, uint32_t> Repository::getNoteInfoToSync(uin
 uint32_t Repository::getOwnerId(uint32_t note_id) {
     for (const auto& [user, notes] : m_notes_map) {
         for (const auto& note : notes) {
+            if (note->getId() != note_id) {
+                continue;
+            }
             if (note->getOwnerId() != 0) {
-                note->getOwnerId();
+                return note->getOwnerId();
             }
         }
     }

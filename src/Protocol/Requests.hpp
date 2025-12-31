@@ -16,14 +16,12 @@ namespace Protocol {
     };
 
     struct GetNotesRequest {
-//        Operation op;
         uint32_t user_id;
     };
 
     struct CreateNoteRequest {
         uint32_t user_id;
         std::string note_title;
-//        Operation op;
     };
 
     struct SyncNoteRequest {
@@ -56,14 +54,18 @@ namespace Protocol {
         uint32_t owner_id;
         uint32_t version;
         std::string note_title;
-//        std::string note_text;
     };
 
     struct ApproveMergeRequest {
         uint32_t note_id;
         uint32_t user_id;
-        uint8_t type;
-        uint8_t status;
         std::string merged_text;
+    };
+
+    struct OwnerApproveMergeRequest {
+        uint32_t note_id;
+        uint32_t merge_sender_id;
+//        uint8_t result_code;
+        std::string approve_text;
     };
 }

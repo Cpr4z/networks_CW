@@ -252,6 +252,33 @@ ApplicationWindow {
         }
     }
 
+    ApproveMergeDialog {
+        id: approveMergeDialog
+        anchors.centerIn: parent
+
+        onAcceptMerge: function(noteId, text, version) {
+            // Владелец принял слияние
+            console.log("Owner accepted merge for note:", noteId)
+            notesManager.approveMerge(noteId, text, version)
+
+            // Обновляем локальный текст и версию
+            textArea.text = text
+            localVersion = version
+            serverVersion = version
+            hasUnsavedChanges = false
+        }
+
+        onRejectMerge: function(noteId) {
+            console.log("Owner rejected merge for note:", noteId)
+            notesManager.rejectMerge(noteId)
+        }
+
+        onRequestChanges: function(noteId, feedback) {
+            console.log("Owner requested changes for note:", noteId, "Feedback:", feedback)
+            notesManager.requestMergeChanges(noteId, feedback)
+        }
+    }
+
     Popup {
         id: shareSuccessPopup
         anchors.centerIn: parent
@@ -309,6 +336,10 @@ ApplicationWindow {
 
         function onAfterTextUpdated(version) {
             localVersion = version;
+        }
+
+        function onCreateAcceptMergeDialog(suggested_text) {
+
         }
     }
 

@@ -13,6 +13,7 @@ namespace Protocol {
         UPDATE_TEXT = 0x0007,
         SHARE_NOTE = 0x0008,
         SHARE_NOTE_NOTIFY = 0x0009,
-        APPROVE_MERGE = 0x00010
+        APPROVE_MERGE = 0x0010,
+        OWNER_APPROVE_MERGE = 0x0011,
     };
 }
