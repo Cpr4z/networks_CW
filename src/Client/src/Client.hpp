@@ -20,8 +20,8 @@ public:
 
     void sendAuthRequest(const QString& login, const QString& password);
     void sendRegistrationRequest(const QString& login, const QString& password);
-    void sendGetNotesRequest(); // user_id
-    void sendCreateNoteRequest(const QString& title); // user_id
+    void sendGetNotesRequest();
+    void sendCreateNoteRequest(const QString& title);
     void sendOpenNoteRequest(uint32_t note_id, uint32_t version);
     void sendUpdateTextRequest(uint32_t note_id, const QString& text, uint32_t version);
     void sendShareNoteRequest(uint32_t note_id, uint32_t version);
@@ -59,6 +59,8 @@ signals:
 
     void createOwnerApproveDialog(uint32_t note_id, uint32_t merge_sender_id, const QString& approve_version);
 
+    void getNotes(const QMap<uint32_t, std::tuple<QString, bool, uint32_t, uint32_t>>& notes);
+
 private slots:
     void onReadyRead();
 
@@ -79,9 +81,7 @@ private:
 
 private:
     uint32_t m_user_id = 0;
-//    QString m_username;
     QTcpSocket m_socket;
-//    DocumentsMap m_documents;
 };
 
 using ClientPtr = std::unique_ptr<NoteClient>;

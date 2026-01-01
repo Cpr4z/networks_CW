@@ -27,14 +27,12 @@ NoteClient::NoteClient(QObject *parent) : QObject(parent) {
 void NoteClient::sendAuthRequest(const QString& login, const QString& password) {
     Protocol::AuthRequest req = { login.toStdString(), password.toStdString() };
     std::vector<uint8_t> requestData = Protocol::encodeAuthRequest(req);
-//    std::cout << "Before calling Auth Request" << std::endl;
     m_socket.write(reinterpret_cast<char*>(requestData.data()), requestData.size());
 }
 
 void NoteClient::sendRegistrationRequest(const QString& login, const QString& password) {
     Protocol::RegistrationRequest req = { login.toStdString(), password.toStdString()};
     std::vector<uint8_t> requestData = Protocol::encodeRegistrationRequest(req);
-//    std::cout << "Before calling Registration Request" << std::endl;
     m_socket.write(reinterpret_cast<char*>(requestData.data()), requestData.size());
 }
 
@@ -51,7 +49,9 @@ void NoteClient::sendUpdateTextRequest(uint32_t note_id, const QString& text, ui
 }
 
 void NoteClient::sendGetNotesRequest() {
-
+    Protocol::GetNotesRequest req = { m_user_id };
+    std::vector<uint8_t> requestData = Protocol::encodeGetNotesRequest(req);
+    m_socket.write(reinterpret_cast<char*>(requestData.data()), requestData.size());
 }
 
 void NoteClient::sendCreateNoteRequest(const QString& title) {
@@ -101,7 +101,6 @@ void NoteClient::sendOwnerApproveMergeResponse(uint32_t noteId, uint32_t merge_s
 //    std::string approved_text;
     Protocol::OwnerApproveMergeResponse resp = {Protocol::Operation::OWNER_APPROVE_MERGE, noteId, merge_sender_id, result_code, approved_version.toStdString()};
     std::vector<uint8_t> requestData = Protocol::encodeOwnerApproveMergeResponse(resp);
-//    std::vector<uint8_t> requestData = Protocol::encodeOwnerApproveMergeRequest(req);
     m_socket.write(reinterpret_cast<char*>(requestData.data()), requestData.size());
 }
 
@@ -154,7 +153,16 @@ void NoteClient::handleSyncResponse(const std::vector<uint8_t>& buffer) {
 }
 
 void NoteClient::handleGetNotesResponse(const std::vector<uint8_t>& buffer) {
-
+    const auto& response_opt = Protocol::decodeGetNotesResponse(buffer);
+    if (response_opt.has_value()) {
+        const auto& response = response_opt.value();
+        QMap<uint32_t, std::tuple<QString, bool, uint32_t, uint32_t>> qtNotes;
+        for (const auto& [id, note_info] : response.notes) {
+            const auto& [title, is_shared, version, owner_id] = note_info;
+            qtNotes.insert(id, std::make_tuple(QString::fromStdString(title), is_shared, version, owner_id));
+        }
+        emit getNotes(qtNotes);
+    }
 }
 
 void NoteClient::handleCreateNoteResponse(const std::vector<uint8_t>& buffer) {
@@ -220,8 +228,6 @@ void NoteClient::handleShareNoteNotifyRequest(const std::vector<uint8_t>& buffer
         std::cout << "Note owner id: " << request.owner_id << std::endl;
         std::cout << "Note title is: " << request.note_title << std::endl;
         std::cout << "Note version is: " << request.version << std::endl;
-//        std::cout << request.note_text << std::endl;
-
         emit createSharedNote(request.note_id, QString::fromStdString(request.note_title), request.owner_id, request.version);
 
     }
@@ -283,6 +289,7 @@ void NoteClient::onReadyRead() {
                     break;
 
                 case Protocol::Operation::GET_NOTES:
+                    std::cout << "Got get notes response" << std::endl;
                     handleGetNotesResponse(buffer);
                     break;
 

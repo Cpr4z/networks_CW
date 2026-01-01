@@ -13,6 +13,15 @@ ApplicationWindow {
     property bool showOnlyShared: false
     property int currentFilter: 0
 
+    Component.onCompleted: {
+        if (notesManager && userId > 0) {
+            console.log("Loading notes for user:", userId);
+            notesManager.getNotes(userId);
+        } else {
+            console.warn("Cannot load notes: notesManager =", notesManager, ", userId =", userId);
+        }
+    }
+
     function shouldShowItem(isShared) {
         if (currentFilter === 0) return true;
         if (currentFilter === 1) return !isShared;

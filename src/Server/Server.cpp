@@ -183,6 +183,10 @@ void Server::handleRegistrationRequest(int client_fd, const std::vector<uint8_t>
 void Server::handleGetNotesRequest(int client_fd, const std::vector<uint8_t>& buffer) {
     const auto& request = Protocol::decodeGetNotesRequest(buffer);
 
+    Protocol::GetNotesResponse response;
+    response.op = Protocol::Operation::GET_NOTES;
+    response.notes = m_repository->getNotesForUser(request->user_id);
+    sendGetNotesResponse(client_fd, response);
 }
 
 void Server::handleSyncRequest(int client_fd, const std::vector<uint8_t>& buffer) {

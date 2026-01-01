@@ -22,6 +22,7 @@ public:
     Q_INVOKABLE void syncNote(int noteId);
     Q_INVOKABLE void ownerApprove(int noteId, const QString& merged_version);
     Q_INVOKABLE void ownerApproveResult(int noteId, int merge_sender_id, int merge_result, const QString& merged_text);
+    Q_INVOKABLE void getNotes();
 
 private slots:
 
@@ -39,6 +40,8 @@ private slots:
     void onCreateSyncDialog(const QString& server_text);
 
     void onCreateOwnerApproveDialog(uint32_t note_id, uint32_t merge_sender_id, const QString& approve_version);
+
+    void onGetNotes(const QMap<uint32_t, std::tuple<QString, bool, uint32_t, uint32_t>>& notes);
 
 signals:
     void noteOpened(int note_id, int version, const QString& text);

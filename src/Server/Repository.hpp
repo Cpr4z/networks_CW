@@ -42,6 +42,15 @@ public:
 
     uint32_t getOwnerId(uint32_t note_id);
 
+//    Id note_id;
+//    std::string title;
+//    std::string text;
+//    Id version;
+//    Id owner_id;
+
+    // title, is_shared, version, owner_id
+    std::map<uint32_t, std::tuple<std::string, bool, uint32_t, uint32_t>> getNotesForUser(uint32_t user_id);
+
 private:
     int m_users_count = 0;
     int m_notes_count = 0;

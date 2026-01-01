@@ -19,8 +19,8 @@ namespace Protocol {
 
     struct GetNotesResponse {
         Operation op;
-        // id - title
-        std::map<uint32_t, std::string> notes;
+        // id - version, is_shared, owner_id, title
+        std::map<uint32_t, std::tuple<std::string, bool, uint32_t, uint32_t>> notes;
     };
 
     struct CreateNoteResponse {

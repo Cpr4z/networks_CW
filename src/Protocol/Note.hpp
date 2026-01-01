@@ -10,6 +10,7 @@ struct NoteData {
     std::string text;
     Id version;
     Id owner_id;
+    bool is_shared = false;
 };
 
 class Note {
@@ -28,18 +29,16 @@ public:
     Id getOwnerId() const { return m_note_data.owner_id; }
     std::string getTitle() const { return m_note_data.title; }
     std::string getText() const { return m_note_data.text; }
-    void setText(const std::string& text) { m_note_data.text = text;}
+    void setText(const std::string& text) { m_note_data.text = text; }
     void setVersion(Id version) { m_note_data.version = version; }
     Id getVersion() const { return m_note_data.version; }
+    bool isShared() const { return m_note_data.is_shared; }
+    void makeShared() { m_note_data.is_shared = true; }
 
 private:
     NoteData m_note_data;
-//    Id m_id = 0;
-//    Id m_cursor_pos = 0;
-//    Users m_current_users;
 };
 
 using NotePtr = std::shared_ptr<Note>;
 using Notes = Vector<NotePtr>;
-//using DocumentsMap = Map<Id, NotePtr>;
 using NotesMap = Map<UserPtr, Notes>;

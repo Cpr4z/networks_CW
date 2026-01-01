@@ -170,6 +170,7 @@ void Repository::shareNoteToAllUsers(uint32_t owner_id, uint32_t note_id) {
         bool note_already_exists = false;
         for (const auto& note_ptr : notes_vector) {
             if (note_ptr->getId() == note_id) {
+                note_ptr->makeShared();
                 note_already_exists = true;
                 break;
             }
@@ -294,4 +295,16 @@ uint32_t Repository::getOwnerId(uint32_t note_id) {
         }
     }
     return 0;
+}
+
+std::map<uint32_t, std::tuple<std::string, bool, uint32_t, uint32_t>> Repository::getNotesForUser(uint32_t user_id) {
+    std::map<uint32_t, std::tuple<std::string, bool, uint32_t, uint32_t>> result;
+    const auto user = std::ranges::find_if(m_notes_map, [&](const auto& item){
+        return item.first->getId() == user_id;
+    });
+    for (const auto& note : user->second) {
+        result[note->getId()] = std::make_tuple(note->getTitle(), note->isShared(), note->getVersion(), note->getOwnerId());
+//        result[note->getId()] = note->getTitle();
+    }
+    return result;
 }
