@@ -44,7 +44,7 @@ private slots:
 
     void onGetNotes(const QMap<uint32_t, std::tuple<QString, bool, uint32_t, uint32_t>>& notes);
 
-    void onApproveServerVersion(uint32_t note_id, const QString& server_version);
+    void onApproveServerVersion(uint32_t note_id, uint32_t version, const QString& server_version);
 
 signals:
     void noteOpened(int note_id, int version, const QString& text);
@@ -53,7 +53,8 @@ signals:
     void createSyncDialog(const QString& server_text);
     void createOwnerApproveDialog(int note_id, int merge_sender_id, const QString& approve_version);
     void afterTextUpdated(int version);
-
+//    void createAcceptMergeDialog(const QString& suggested_text);
+    void serverVersionAccepted(int noteId, int version, const QString& server_version);
 
 private:
     NotesModel* m_model;

@@ -250,13 +250,13 @@ ApplicationWindow {
         noteId: noteWindow.noteId
         noteTitle: titleField.text
 
-        onAcceptServer: {
+         onAcceptServer: {
             // Пользователь выбрал принять серверную версию
-            notesManager.updateNote(noteId, conflictDialog.serverContent, serverVersion)
-            conflictDetected = false
-            localVersion = serverVersion
-            textArea.text = conflictDialog.serverContent
-            hasUnsavedChanges = false
+            notesManager.serverApprove(conflictDialog.noteId)
+            // conflictDetected = false
+            // localVersion = serverVersion
+            // textArea.text = conflictDialog.serverContent
+            // hasUnsavedChanges = false
         }
 
         onMergeManually: {
@@ -353,12 +353,30 @@ ApplicationWindow {
         }
 
         function onAfterTextUpdated(version) {
-            localVersion = version;
+            noteWindow.localVersion = version;
         }
 
-        function onCreateAcceptMergeDialog(suggested_text) {
+        function onServerVersionAccepted(noteId, version, server_text) {
+            if (noteId !== noteWindow.noteId)
+                return
+
+            textArea.text = server_text
+            noteWindow.initialText = server_text
+            noteWindow.localVersion = version
+            noteWindow.serverVersion = version
+            noteWindow.hasUnsavedChanges = false
+            noteWindow.conflictDetected = false
+
+            conflictDialog.close()
+        }
+
+        function onCreateOwnerApproveDialog(noteId, merge_sender_id, approve_text) {
 
         }
+
+        // function onCreateAcceptMergeDialog(suggested_text) {
+        //
+        // }
     }
 
     // Connections {

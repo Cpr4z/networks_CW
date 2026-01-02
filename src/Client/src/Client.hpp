@@ -61,7 +61,7 @@ signals:
 
     void getNotes(const QMap<uint32_t, std::tuple<QString, bool, uint32_t, uint32_t>>& notes);
 
-    void approveServerVersion(uint32_t note_id, const QString& server_version);
+    void approveServerVersion(uint32_t note_id, uint32_t version, const QString& server_version);
 
 private slots:
     void onReadyRead();

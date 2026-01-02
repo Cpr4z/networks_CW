@@ -1123,7 +1123,7 @@ namespace Protocol {
 //    std::string merged_text;
     std::vector<uint8_t> encodeApproveMergeRequest(const ApproveMergeRequest& req) {
         const uint32_t text_size = static_cast<uint32_t>(req.merged_text.size());
-        std::vector<uint8_t> buffer(2 + 4 + 4 + 4 + text_size);
+        std::vector<uint8_t> buffer(2 + 4 + 4 + 4 + 1 + text_size);
 
         uint8_t* ptr = buffer.data();
 
@@ -1263,7 +1263,36 @@ namespace Protocol {
 
 
     std::vector<uint8_t> encodeServerApproveMergeRequest(const ServerApproveMergeRequest& req) {
-        return {};
+        const uint32_t str_size = static_cast<uint32_t>(req.server_version.size());
+
+        // op(2) + note_id(4) + version(4) + str_len(4) + str(str_size)
+        std::vector<uint8_t> buffer(2 + 4 + 4 + 4 + str_size);
+        uint8_t* ptr = buffer.data();
+
+        // 1) op
+        uint16_t op = static_cast<uint16_t>(Protocol::Operation::SERVER_APPROVE_MERGE);
+        std::memcpy(ptr, &op, sizeof(op));
+        ptr += sizeof(op);
+
+        // 2) note_id
+        std::memcpy(ptr, &req.note_id, sizeof(req.note_id));
+        ptr += sizeof(req.note_id);
+
+        // 3) version
+        std::memcpy(ptr, &req.version, sizeof(req.version));
+        ptr += sizeof(req.version);
+
+        // 4) server_version length
+        std::memcpy(ptr, &str_size, sizeof(str_size));
+        ptr += sizeof(str_size);
+
+        // 5) server_version bytes
+        if (str_size > 0) {
+            std::memcpy(ptr, req.server_version.data(), str_size);
+            ptr += str_size;
+        }
+
+        return buffer;
     }
 
     std::vector<uint8_t> encodeServerApproveMergeResponse(const OwnerApproveMergeResponse& resp) {
@@ -1271,7 +1300,46 @@ namespace Protocol {
     }
 
     std::optional<ServerApproveMergeRequest> decodeServerApproveMergeRequest(const std::vector<uint8_t>& buffer) {
-        return {};
+        constexpr size_t MIN_SIZE = 2 + 4 + 4 + 4; // op + note_id + version + str_len
+        if (buffer.size() < MIN_SIZE)
+            return std::nullopt;
+
+        ServerApproveMergeRequest req{};
+        const uint8_t* ptr = buffer.data();
+
+        // 1) op
+        uint16_t op_raw = 0;
+        std::memcpy(&op_raw, ptr, sizeof(op_raw));
+        ptr += sizeof(op_raw);
+
+        // (опционально) проверка что это правильная операция
+        if (static_cast<Protocol::Operation>(op_raw) != Protocol::Operation::SERVER_APPROVE_MERGE) {
+            return std::nullopt;
+        }
+
+        // 2) note_id
+        std::memcpy(&req.note_id, ptr, sizeof(req.note_id));
+        ptr += sizeof(req.note_id);
+
+        // 3) version
+        std::memcpy(&req.version, ptr, sizeof(req.version));
+        ptr += sizeof(req.version);
+
+        // 4) str_len
+        uint32_t str_len = 0;
+        std::memcpy(&str_len, ptr, sizeof(str_len));
+        ptr += sizeof(str_len);
+
+        // Проверка границ
+        const size_t used = static_cast<size_t>(ptr - buffer.data());
+        if (buffer.size() < used + static_cast<size_t>(str_len))
+            return std::nullopt;
+
+        // 5) server_version
+        req.server_version.assign(reinterpret_cast<const char*>(ptr), str_len);
+        ptr += str_len;
+
+        return req;
     }
 
     std::optional<ServerApproveMergeResponse> decodeServerApproveMergeResponse(const std::vector<uint8_t>& buffer) {

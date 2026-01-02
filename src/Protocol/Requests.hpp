@@ -72,6 +72,7 @@ namespace Protocol {
 
     struct ServerApproveMergeRequest {
         uint32_t note_id;
+        uint32_t version;
         std::string server_version;
     };
 }

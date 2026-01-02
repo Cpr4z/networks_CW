@@ -42,7 +42,7 @@ public:
 
     uint32_t getOwnerId(uint32_t note_id);
 
-    std::string getOwnerTextVersion(uint32_t note_id);
+    std::pair<uint32_t, std::string> getOwnerDataVersion(uint32_t note_id);
 
 //    Id note_id;
 //    std::string title;

@@ -318,13 +318,16 @@ void Server::handleApproveMergeRequest(int client_fd, const std::vector<uint8_t>
     }
     // status 1 -> server approve
     else if (req->status == 1) {
-
         Protocol::ServerApproveMergeRequest request;
         request.note_id = req->note_id;
-        request.server_version = m_repository->getOwnerTextVersion(req->note_id);
+        std::cout << "Server approve merge request" << std::endl;
+        const auto& [version, server_text] = m_repository->getOwnerDataVersion(req->note_id);
+        std::cout << "Version on server is: " << version << std::endl;
+        std::cout << "Version of note on sever is: " << std::endl << server_text << std::endl;
+        request.version = version;
+        request.server_version = server_text;
 
         sendServerApproveMergeRequest(client_fd, request);
-
     }
 }
 

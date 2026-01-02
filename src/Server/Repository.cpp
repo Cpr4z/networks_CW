@@ -308,7 +308,7 @@ std::map<uint32_t, std::tuple<std::string, bool, uint32_t, uint32_t>> Repository
     return result;
 }
 
-std::string Repository::getOwnerTextVersion(uint32_t note_id) {
+std::pair<uint32_t, std::string> Repository::getOwnerDataVersion(uint32_t note_id) {
     uint32_t owner_id = getOwnerId(note_id);
     const auto user = std::ranges::find_if(m_notes_map, [&](const auto& item){
         return item.first->getId() == owner_id;
@@ -317,5 +317,7 @@ std::string Repository::getOwnerTextVersion(uint32_t note_id) {
         return item->getId() == note_id;
     });
 
-    return (*note)->getText();
+    return {(*note)->getVersion(), (*note)->getText()};
+
+//    return (*note)->getText();
 }

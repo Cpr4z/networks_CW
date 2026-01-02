@@ -102,8 +102,9 @@ void NotesManager::onGetNotes(const QMap<uint32_t, std::tuple<QString, bool, uin
     }
 }
 
-void NotesManager::onApproveServerVersion(uint32_t note_id, const QString& server_version) {
-
+void NotesManager::onApproveServerVersion(uint32_t note_id, uint32_t version, const QString& server_version) {
+    std::cout << "Approved server version" << std::endl;
+    emit serverVersionAccepted(note_id, version, server_version);
 }
 
 // Вызывается, когда пользователь выбирает при конфликте
@@ -113,6 +114,7 @@ void NotesManager::ownerApprove(int noteId, const QString& merged_version) {
 }
 
 void NotesManager::serverApprove(int noteId) {
+    std::cout << "Calling NotesManager::serverApprove method" << std::endl;
     m_client->sendApproveMergeRequest(noteId, 1, "");
 }
 

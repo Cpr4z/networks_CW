@@ -89,6 +89,9 @@ void NoteClient::sendSyncNoteRequest(uint32_t note_id) {
 void NoteClient::sendApproveMergeRequest(uint32_t noteId, uint8_t status, const QString& merged_version) {
     std::cout << "Send approve merge request" << std::endl;
     Protocol::ApproveMergeRequest req = { noteId, m_user_id, status, merged_version.toStdString() };
+    std::cout << "User with id: " << m_user_id << std::endl;
+    std::cout << "Want to accept server version of note with id: " << noteId << std::endl;
+    std::cout << "Merged version is: " << merged_version.toStdString() << std::endl;
     std::vector<uint8_t> requestData = Protocol::encodeApproveMergeRequest(req);
     m_socket.write(reinterpret_cast<char*>(requestData.data()), requestData.size());
 }
@@ -266,9 +269,15 @@ void NoteClient::handleOwnerApproveMergeResponse(const std::vector<uint8_t>& buf
 }
 
 void NoteClient::handleServerApproveMergeRequest(const std::vector<uint8_t>& buffer) {
-    const auto& response_opt = Protocol::decodeServerApproveMergeRequest(buffer);
-    if (response_opt.has_value()) {
-        const auto& response = response_opt.value();
+    const auto& request_opt = Protocol::decodeServerApproveMergeRequest(buffer);
+    if (request_opt.has_value()) {
+        const auto& request = request_opt.value();
+
+        std::cout << "Sent request to accept server version of note: " << request.note_id << std::endl;
+        std::cout << "Version of sent note is: " << request.version << std::endl;
+        std::cout << "Text of server version: " << request.server_version << std::endl;
+
+        emit approveServerVersion(request.note_id, request.version, QString::fromStdString(request.server_version));
     }
 }
 
