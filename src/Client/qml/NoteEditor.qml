@@ -20,6 +20,11 @@ ApplicationWindow {
 
     property bool hasUnsavedChanges: false
 
+    property Timer changeTimer: Timer {
+        interval: 300
+        onTriggered: checkForChanges()
+    }
+
     function checkForChanges() {
         hasUnsavedChanges = (titleField.text !== initialTitle || textArea.text !== initialText)
     }
@@ -61,9 +66,13 @@ ApplicationWindow {
                 maximumLength: 100
 
                 onTextChanged: {
-                    checkForChanges()
-                    noteWindow.title = text ? text : "Без названия"
+                    changeTimer.restart()
                 }
+
+                // onTextChanged: {
+                //     checkForChanges()
+                //     noteWindow.title = text ? text : "Без названия"
+                // }
             }
 
             ToolButton {
@@ -134,7 +143,16 @@ ApplicationWindow {
             selectByMouse: true
             persistentSelection: true
 
-            onTextChanged: checkForChanges()
+            // property Timer changeTimer: Timer {
+            //     interval: 300
+            //     onTriggered: checkForChanges()
+            // }
+
+            onTextChanged: {
+                changeTimer.restart()
+            }
+
+            // onTextChanged: checkForChanges()
         }
     }
 
@@ -245,8 +263,8 @@ ApplicationWindow {
             // Пользователь выбрал ручное слияние
             conflictDetected = false
             localVersion++ // Увеличиваем версию
-            textArea.text = content // Текст после ручного редактирования
-            notesManager.ownerApprove(noteId, content);
+            textArea.text = localContent // Текст после ручного редактирования
+            notesManager.ownerApprove(noteId, localContent);
             // notesManager.forceUpdateNote(noteId, content, localVersion)
             hasUnsavedChanges = false
         }

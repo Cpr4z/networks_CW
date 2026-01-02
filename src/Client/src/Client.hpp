@@ -26,7 +26,7 @@ public:
     void sendUpdateTextRequest(uint32_t note_id, const QString& text, uint32_t version);
     void sendShareNoteRequest(uint32_t note_id, uint32_t version);
     void sendSyncNoteRequest(uint32_t note_id);
-    void sendApproveMergeRequest(uint32_t noteId, const QString& merged_version);
+    void sendApproveMergeRequest(uint32_t noteId, uint8_t status, const QString& merged_version);
 
 
     void sendOwnerApproveMergeResponse(uint32_t noteId, uint32_t merge_sender_id, uint8_t result_code, const QString& approved_version);
@@ -61,6 +61,8 @@ signals:
 
     void getNotes(const QMap<uint32_t, std::tuple<QString, bool, uint32_t, uint32_t>>& notes);
 
+    void approveServerVersion(uint32_t note_id, const QString& server_version);
+
 private slots:
     void onReadyRead();
 
@@ -78,6 +80,7 @@ private:
 
     void handleShareNoteNotifyRequest(const std::vector<uint8_t>& buffer);
     void handleOwnerApproveMergeRequest(const std::vector<uint8_t>& buffer);
+    void handleServerApproveMergeRequest(const std::vector<uint8_t>& buffer);
 
 private:
     uint32_t m_user_id = 0;

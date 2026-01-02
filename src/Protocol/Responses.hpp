@@ -75,4 +75,8 @@ namespace Protocol {
         uint8_t status;
         std::string approved_text;
     };
+
+    struct ServerApproveMergeResponse {
+        Operation op;
+    };
 }

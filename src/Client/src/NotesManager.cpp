@@ -17,6 +17,7 @@ NotesManager::NotesManager(NoteClient* client, QObject* parent)
     connect(m_client, &NoteClient::createSyncDialog, this, &NotesManager::onCreateSyncDialog);
     connect(m_client, &NoteClient::createOwnerApproveDialog, this, &NotesManager::onCreateOwnerApproveDialog);
     connect(m_client, &NoteClient::getNotes, this, &NotesManager::onGetNotes);
+    connect(m_client, &NoteClient::approveServerVersion, this, &NotesManager::onApproveServerVersion);
 }
 
 QAbstractListModel* NotesManager::model() const {
@@ -101,9 +102,18 @@ void NotesManager::onGetNotes(const QMap<uint32_t, std::tuple<QString, bool, uin
     }
 }
 
+void NotesManager::onApproveServerVersion(uint32_t note_id, const QString& server_version) {
+
+}
+
+// Вызывается, когда пользователь выбирает при конфликте
 void NotesManager::ownerApprove(int noteId, const QString& merged_version) {
     std::cout << "NotesManager::ownerApprove called" << std::endl;
-    m_client->sendApproveMergeRequest(noteId, merged_version);
+    m_client->sendApproveMergeRequest(noteId, 0, merged_version);
+}
+
+void NotesManager::serverApprove(int noteId) {
+    m_client->sendApproveMergeRequest(noteId, 1, "");
 }
 
 void NotesManager::ownerApproveResult(int noteId, int merge_sender_id, int merge_result, const QString& merged_text) {

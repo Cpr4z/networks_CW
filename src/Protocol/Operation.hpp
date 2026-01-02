@@ -15,5 +15,6 @@ namespace Protocol {
         SHARE_NOTE_NOTIFY = 0x0009,
         APPROVE_MERGE = 0x0010,
         OWNER_APPROVE_MERGE = 0x0011,
+        SERVER_APPROVE_MERGE = 0x0012,
     };
 }

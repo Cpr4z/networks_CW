@@ -304,7 +304,18 @@ std::map<uint32_t, std::tuple<std::string, bool, uint32_t, uint32_t>> Repository
     });
     for (const auto& note : user->second) {
         result[note->getId()] = std::make_tuple(note->getTitle(), note->isShared(), note->getVersion(), note->getOwnerId());
-//        result[note->getId()] = note->getTitle();
     }
     return result;
+}
+
+std::string Repository::getOwnerTextVersion(uint32_t note_id) {
+    uint32_t owner_id = getOwnerId(note_id);
+    const auto user = std::ranges::find_if(m_notes_map, [&](const auto& item){
+        return item.first->getId() == owner_id;
+    });
+    const auto note = std::ranges::find_if(user->second, [&](const auto& item){
+        return item->getId() == note_id;
+    });
+
+    return (*note)->getText();
 }

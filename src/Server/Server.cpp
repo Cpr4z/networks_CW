@@ -116,6 +116,16 @@ void Server::sendOwnerApproveMergeRequest(int client_fd, const Protocol::OwnerAp
     }
 }
 
+void Server::sendServerApproveMergeRequest(int client_fd, const Protocol::ServerApproveMergeRequest& request) {
+    std::vector<uint8_t> request_buffer = Protocol::encodeServerApproveMergeRequest(request);
+    ssize_t sent = send(client_fd, request_buffer.data(), request_buffer.size(), 0);
+    if (sent < 0) {
+        perror("send");
+    } else {
+        std::cout << "Sent response to client " << client_fd << std::endl;
+    }
+}
+
 void Server::sendApproveMergeResponse(int client_fd, const Protocol::ApproveMergeResponse& response) {
     std::vector<uint8_t> response_buffer = Protocol::encodeApproveMergeResponse(response);
     ssize_t sent = send(client_fd, response_buffer.data(), response_buffer.size(), 0);
@@ -285,7 +295,6 @@ void Server::handleShareNoteRequest(int client_fd, const std::vector<uint8_t>& b
 
     request.note_title = title;
     request.version = version;
-//    request.version = m_repository->getNoteVersion(req->user_id, req->note_id);
 
     sendShareNoteNotifyRequest(client_fd, request);
 }
@@ -293,22 +302,30 @@ void Server::handleShareNoteRequest(int client_fd, const std::vector<uint8_t>& b
 void Server::handleApproveMergeRequest(int client_fd, const std::vector<uint8_t>& buffer) {
     const auto& req = Protocol::decodeApproveMergeRequest(buffer);
     std::cout << "Got approve merge request" << std::endl;
-    Id note_owner_id = m_repository->getOwnerId(req->note_id);
-    std::cout << "Note owner id is: " << note_owner_id << std::endl;
-    int client_fd_owner = m_clients[static_cast<int>(note_owner_id)];
+    // status 0 -> owner approve
+    if (req->status == 0) {
+        Id note_owner_id = m_repository->getOwnerId(req->note_id);
+        std::cout << "Note owner id is: " << note_owner_id << std::endl;
+        int client_fd_owner = m_clients[static_cast<int>(note_owner_id)];
 
-    // посылаем запрос владельцу заметки для того, чтобы он одобрил merge request
-    Protocol::OwnerApproveMergeRequest request;
-    request.note_id = req->note_id;
-    request.approve_text = req->merged_text;
-    request.merge_sender_id = req->user_id;
+        // посылаем запрос владельцу заметки для того, чтобы он одобрил merge request
+        Protocol::OwnerApproveMergeRequest request;
+        request.note_id = req->note_id;
+        request.approve_text = req->merged_text;
+        request.merge_sender_id = req->user_id;
 
-//    Protocol::ApproveMergeResponse response;
-//    response.op = Protocol::Operation::APPROVE_MERGE;
-//    response.new_text = req->merged_text;
-//    response.note_id = req->note_id;
-    // отправляем запрос владельцу заметки, по идее нужно отправить айдишник отправителя, чтобы потом можно было послать ему же ответ
-    sendOwnerApproveMergeRequest(client_fd_owner, request);
+        sendOwnerApproveMergeRequest(client_fd_owner, request);
+    }
+    // status 1 -> server approve
+    else if (req->status == 1) {
+
+        Protocol::ServerApproveMergeRequest request;
+        request.note_id = req->note_id;
+        request.server_version = m_repository->getOwnerTextVersion(req->note_id);
+
+        sendServerApproveMergeRequest(client_fd, request);
+
+    }
 }
 
 void Server::handleOwnerApproveMergeRequest(int client_fd, const std::vector<uint8_t>& buffer) {
@@ -372,12 +389,12 @@ size_t Server::getMessageLength(Protocol::Operation op,
         case Protocol::Operation::APPROVE_MERGE: {
 //            uint32_t note_id;
 //            uint32_t user_id;
-//            uint8_t type;
 //            uint8_t status;
 //            std::string merged_text;
             uint32_t textLen;
-            std::memcpy(&textLen, buffer.data() + offset + 2 + 4 + 4 + 1 + 1, sizeof(textLen));
-            return 2 + 4 + 4 + 4 + 1 + 1 + textLen;
+            std::memcpy(&textLen, buffer.data() + offset + 2 + 4 + 4 + 1, sizeof(textLen));
+            std::cout << "Got approve merge request with size: " << 2 + 4 + 4 + 4 + 1 + textLen << std::endl;
+            return 2 + 4 + 4 + 4 + 1 + textLen;
         }
         case Protocol::Operation::OWNER_APPROVE_MERGE: {
             return 0;

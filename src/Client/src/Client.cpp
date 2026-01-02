@@ -86,9 +86,9 @@ void NoteClient::sendSyncNoteRequest(uint32_t note_id) {
     m_socket.write(reinterpret_cast<char*>(requestData.data()), requestData.size());
 }
 
-void NoteClient::sendApproveMergeRequest(uint32_t noteId, const QString& merged_version) {
+void NoteClient::sendApproveMergeRequest(uint32_t noteId, uint8_t status, const QString& merged_version) {
     std::cout << "Send approve merge request" << std::endl;
-    Protocol::ApproveMergeRequest req = { noteId, m_user_id, merged_version.toStdString() };
+    Protocol::ApproveMergeRequest req = { noteId, m_user_id, status, merged_version.toStdString() };
     std::vector<uint8_t> requestData = Protocol::encodeApproveMergeRequest(req);
     m_socket.write(reinterpret_cast<char*>(requestData.data()), requestData.size());
 }
@@ -265,6 +265,13 @@ void NoteClient::handleOwnerApproveMergeResponse(const std::vector<uint8_t>& buf
     }
 }
 
+void NoteClient::handleServerApproveMergeRequest(const std::vector<uint8_t>& buffer) {
+    const auto& response_opt = Protocol::decodeServerApproveMergeRequest(buffer);
+    if (response_opt.has_value()) {
+        const auto& response = response_opt.value();
+    }
+}
+
 void NoteClient::onReadyRead() {
     while (m_socket.bytesAvailable() > 0) {
         std::cout << "Some bytes avaliable" << std::endl;
@@ -326,6 +333,11 @@ void NoteClient::onReadyRead() {
                 case Protocol::Operation::OWNER_APPROVE_MERGE:
                     std::cout << "Got owner approve merge response" << std::endl;
                     handleOwnerApproveMergeResponse(buffer);
+                    break;
+
+                case Protocol::Operation::SERVER_APPROVE_MERGE:
+                    std::cout << "Got server approve merge request" << std::endl;
+                    handleServerApproveMergeRequest(buffer);
                     break;
 
                 default:

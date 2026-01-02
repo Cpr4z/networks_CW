@@ -1119,10 +1119,11 @@ namespace Protocol {
 
 //    uint32_t note_id;
 //    uint32_t user_id;
+//      uint8_t status;
 //    std::string merged_text;
     std::vector<uint8_t> encodeApproveMergeRequest(const ApproveMergeRequest& req) {
         const uint32_t text_size = static_cast<uint32_t>(req.merged_text.size());
-        std::vector<uint8_t> buffer(2 + 4 + 4 + 1 + 1 + 4 + text_size);
+        std::vector<uint8_t> buffer(2 + 4 + 4 + 4 + text_size);
 
         uint8_t* ptr = buffer.data();
 
@@ -1137,6 +1138,10 @@ namespace Protocol {
         // Кодируем user_id (4 байта)
         std::memcpy(ptr, &req.user_id, sizeof(req.user_id));
         ptr += sizeof(req.user_id);
+
+        // status
+        std::memcpy(ptr, &req.status, sizeof(req.status));
+        ptr += sizeof(req.status);
 
         // Кодируем длину текста (4 байта)
         std::memcpy(ptr, &text_size, sizeof(text_size));
@@ -1175,6 +1180,10 @@ namespace Protocol {
         return buffer;
     }
 
+    //    uint32_t note_id;
+    //    uint32_t user_id;
+    //    uint8_t status;
+    //    std::string merged_text;
     std::optional<ApproveMergeRequest> decodeApproveMergeRequest(const std::vector<uint8_t>& buffer) {
         ApproveMergeRequest req;
         const uint8_t* ptr = buffer.data();
@@ -1189,6 +1198,10 @@ namespace Protocol {
         // Декодируем user_id
         std::memcpy(&req.user_id, ptr, sizeof(req.user_id));
         ptr += sizeof(req.user_id);
+
+        // status
+        std::memcpy(&req.status, ptr, sizeof(req.status));
+        ptr += sizeof(req.status);
 
         // Декодируем длину текста
         uint32_t text_size;
@@ -1241,6 +1254,27 @@ namespace Protocol {
     }
 
     std::optional<OwnerApproveMergeResponse> decodeOwnerApproveMergeResponse(const std::vector<uint8_t>& buffer) {
+        return {};
+    }
+
+
+
+
+
+
+    std::vector<uint8_t> encodeServerApproveMergeRequest(const ServerApproveMergeRequest& req) {
+        return {};
+    }
+
+    std::vector<uint8_t> encodeServerApproveMergeResponse(const OwnerApproveMergeResponse& resp) {
+        return {};
+    }
+
+    std::optional<ServerApproveMergeRequest> decodeServerApproveMergeRequest(const std::vector<uint8_t>& buffer) {
+        return {};
+    }
+
+    std::optional<ServerApproveMergeResponse> decodeServerApproveMergeResponse(const std::vector<uint8_t>& buffer) {
         return {};
     }
 

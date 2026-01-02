@@ -58,6 +58,7 @@ private:
 
     void sendShareNoteNotifyRequest(int client_fd, const Protocol::ShareNoteNotifyRequest& request);
     void sendOwnerApproveMergeRequest(int client_fd, const Protocol::OwnerApproveMergeRequest& request);
+    void sendServerApproveMergeRequest(int client_fd, const Protocol::ServerApproveMergeRequest& request);
 
 private:
     void broadcastToAllClients(int client_fd, const std::vector<uint8_t>& data);
