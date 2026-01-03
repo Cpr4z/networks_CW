@@ -1,6 +1,6 @@
 #include "NotesManager.hpp"
 
-#include <iostream>
+//#include <iostream>
 
 NotesManager::NotesManager(NoteClient* client, QObject* parent)
         : QObject(parent),
@@ -18,6 +18,7 @@ NotesManager::NotesManager(NoteClient* client, QObject* parent)
     connect(m_client, &NoteClient::createOwnerApproveDialog, this, &NotesManager::onCreateOwnerApproveDialog);
     connect(m_client, &NoteClient::getNotes, this, &NotesManager::onGetNotes);
     connect(m_client, &NoteClient::approveServerVersion, this, &NotesManager::onApproveServerVersion);
+    connect(m_client, &NoteClient::updateTextMerged, this, &NotesManager::onUpdateTextMerged);
 }
 
 QAbstractListModel* NotesManager::model() const {
@@ -25,7 +26,6 @@ QAbstractListModel* NotesManager::model() const {
 }
 
 void NotesManager::createNote(const QString& title) {
-//    std::cout << "Entered NotesManager::createNote" << std::endl;
     if (title.isEmpty()) {
         emit onNoteCreationFailed("Заметка не может быть создана с пустым названием");
         return;
@@ -52,8 +52,6 @@ void NotesManager::onNoteOpenSuccess(uint32_t note_id, uint32_t version, const Q
 void NotesManager::onNoteOpenFailed(uint32_t note_id, const QString& reason) {
     qWarning() << "NotesManager::onNoteOpenFailed - ID:" << note_id
                << "Reason:" << reason;
-
-    // Можно показать ошибку пользователю
     emit noteOpenError(static_cast<int>(note_id), reason);
 }
 
@@ -88,7 +86,6 @@ void NotesManager::onCreateSyncDialog(const QString& server_text) {
 }
 
 void NotesManager::onCreateOwnerApproveDialog(uint32_t note_id, uint32_t merge_sender_id, const QString& approve_text) {
-    std::cout << "before creating owner approve dialog" << std::endl;
     emit createOwnerApproveDialog(note_id, merge_sender_id, approve_text);
 }
 
@@ -104,17 +101,18 @@ void NotesManager::onGetNotes(const QMap<uint32_t, std::tuple<QString, bool, uin
 }
 
 void NotesManager::onApproveServerVersion(uint32_t note_id, uint32_t version, const QString& server_version) {
-    std::cout << "Approved server version" << std::endl;
     emit serverVersionAccepted(note_id, version, server_version);
 }
 
+void NotesManager::onUpdateTextMerged(uint32_t note_id, uint32_t version, const QString& merged_version) {
+    emit updateTextMerged(note_id, version, merged_version);
+}
+
 void NotesManager::ownerApprove(int noteId, const QString& merged_version) {
-    std::cout << "NotesManager::ownerApprove called" << std::endl;
     m_client->sendApproveMergeRequest(noteId, 0, merged_version);
 }
 
 void NotesManager::serverApprove(int noteId) {
-    std::cout << "Calling NotesManager::serverApprove method" << std::endl;
     m_client->sendApproveMergeRequest(noteId, 1, "");
 }
 

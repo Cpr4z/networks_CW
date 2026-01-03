@@ -102,7 +102,6 @@ ApplicationWindow {
 
                 onClicked: {
                     if (mode === "login") {
-                        console.log("Before calling login method")
                         authManager.login(username.text, password.text)
                     }
                     else
@@ -134,17 +133,16 @@ ApplicationWindow {
 
                 function onLoginSuccess(userId) {
                     var component = Qt.createComponent("qrc:/qml/NotesListPage.qml")
-                    console.log("Login finished successfully")
                     if (component.status === Component.Ready) {
                         var window = component.createObject(null, { "userId": userId })
                         if (window === null) {
-                            console.log("Ошибка создания NotesListPage:", component.errorString())
+                            console.warn("Ошибка создания NotesListPage:", component.errorString())
                         } else {
                             if (typeof root !== "undefined")
                                 root.destroy()
                         }
                     } else if (component.status === Component.Error) {
-                        console.log("Ошибка загрузки QML:", component.errorString())
+                        console.warn("Ошибка загрузки QML:", component.errorString())
                     }
                 }
                 function onLoginFailed(reason) {
@@ -153,7 +151,6 @@ ApplicationWindow {
                 }
 
                 function onRegistrationSuccess(userId) {
-                    console.log("Регситрация завершилась успешно")
                     status.color = "green"
                     status.text = "Регистрация прошла успешно! Теперь войдите."
                     mode = "login"

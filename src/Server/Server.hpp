@@ -40,9 +40,9 @@ private:
     void handleOpenNoteRequest(int client_fd, const std::vector<uint8_t>& buffer);
     void handleUpdateTextRequest(int client_fd, const std::vector<uint8_t>& buffer);
     void handleShareNoteRequest(int client_fd, const std::vector<uint8_t>& buffer);
-    void handleShareNoteNotifyRequest(int client_fd, const std::vector<uint8_t>& buffer);
     void handleApproveMergeRequest(int client_fd, const std::vector<uint8_t>& buffer);
-    void handleOwnerApproveMergeRequest(int client_fd, const std::vector<uint8_t>& buffer);
+
+    void handleOwnerApproveMergeResponse(int client_fd, const std::vector<uint8_t>& buffer);
 
     void sendAuthResponse(int client_fd, const Protocol::AuthResponse& response);
     void sendRegistrationResponse(int client_fd, const Protocol::RegistrationResponse& response);
@@ -51,14 +51,15 @@ private:
     void sendCreateNoteResponse(int client_fd, const Protocol::CreateNoteResponse& response);
     void sendOpenNoteResponse(int client_fd, const Protocol::OpenNoteResponse& response);
     void sendUpdateTextResponse(int client_fd, const Protocol::UpdateTextResponse& response);
-    void sendShareNoteResponse(int client_fd, const Protocol::ShareNoteResponse& response);
-    void sendApproveMergeResponse(int client_fd, const Protocol::ApproveMergeResponse& response);
-    void sendOwnerApproveMergeResponse(int client_fd, const Protocol::OwnerApproveMergeResponse& response);
+//    void sendShareNoteResponse(int client_fd, const Protocol::ShareNoteResponse& response);
+//    void sendApproveMergeResponse(int client_fd, const Protocol::ApproveMergeResponse& response);
+//    void sendOwnerApproveMergeResponse(int client_fd, const Protocol::OwnerApproveMergeResponse& response);
 
 
     void sendShareNoteNotifyRequest(int client_fd, const Protocol::ShareNoteNotifyRequest& request);
     void sendOwnerApproveMergeRequest(int client_fd, const Protocol::OwnerApproveMergeRequest& request);
     void sendServerApproveMergeRequest(int client_fd, const Protocol::ServerApproveMergeRequest& request);
+    void sendUpdateTextMergedRequest(int client_fd, const Protocol::UpdateTextMergedRequest& request);
 
 private:
     void broadcastToAllClients(int client_fd, const std::vector<uint8_t>& data);

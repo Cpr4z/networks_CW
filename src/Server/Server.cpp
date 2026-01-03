@@ -18,9 +18,10 @@ void Server::broadcastToAllClients(int client_fd_, const std::vector<uint8_t>& d
             ssize_t sent = send(client_fd, data.data(), data.size(), 0);
             if (sent < 0) {
                 perror("broadcast send");
-            } else {
-                std::cout << "  Sent to client " << client_fd << std::endl;
             }
+//            else {
+//                std::cout << "  Sent to client " << client_fd << std::endl;
+//            }
         }
     }
 }
@@ -67,7 +68,6 @@ void Server::sendSyncResponse(int client_fd, const Protocol::SyncNoteResponse& r
 
 void Server::sendCreateNoteResponse(int client_fd, const Protocol::CreateNoteResponse& response) {
     std::vector<uint8_t> response_buffer = Protocol::encodeCreateNoteResponse(response);
-    std::cout << "After data encoded for Note Response" << std::endl;
     ssize_t sent = send(client_fd, response_buffer.data(), response_buffer.size(), 0);
     if (sent < 0) {
         perror("send");
@@ -78,7 +78,6 @@ void Server::sendCreateNoteResponse(int client_fd, const Protocol::CreateNoteRes
 
 void Server::sendOpenNoteResponse(int client_fd, const Protocol::OpenNoteResponse& response) {
     std::vector<uint8_t> response_buffer = Protocol::encodeOpenNoteResponse(response);
-    std::cout << "After data encoded for Note Response" << std::endl;
     ssize_t sent = send(client_fd, response_buffer.data(), response_buffer.size(), 0);
     if (sent < 0) {
         perror("send");
@@ -95,10 +94,6 @@ void Server::sendUpdateTextResponse(int client_fd, const Protocol::UpdateTextRes
     } else {
         std::cout << "Sent response to client " << client_fd << std::endl;
     }
-}
-
-void Server::sendShareNoteResponse(int client_fd, const Protocol::ShareNoteResponse& response) {
-
 }
 
 void Server::sendShareNoteNotifyRequest(int client_fd, const Protocol::ShareNoteNotifyRequest& request) {
@@ -126,19 +121,9 @@ void Server::sendServerApproveMergeRequest(int client_fd, const Protocol::Server
     }
 }
 
-void Server::sendApproveMergeResponse(int client_fd, const Protocol::ApproveMergeResponse& response) {
-    std::vector<uint8_t> response_buffer = Protocol::encodeApproveMergeResponse(response);
-    ssize_t sent = send(client_fd, response_buffer.data(), response_buffer.size(), 0);
-    if (sent < 0) {
-        perror("send");
-    } else {
-        std::cout << "Sent response to client " << client_fd << std::endl;
-    }
-}
-
-void Server::sendOwnerApproveMergeResponse(int client_fd, const Protocol::OwnerApproveMergeResponse& response) {
-    std::vector<uint8_t> response_buffer = Protocol::encodeOwnerApproveMergeResponse(response);
-    ssize_t sent = send(client_fd, response_buffer.data(), response_buffer.size(), 0);
+void Server::sendUpdateTextMergedRequest(int client_fd, const Protocol::UpdateTextMergedRequest& request) {
+    std::vector<uint8_t> request_buffer = Protocol::encodeUpdateTextMergedRequest(request);
+    ssize_t sent = send(client_fd, request_buffer.data(), request_buffer.size(), 0);
     if (sent < 0) {
         perror("send");
     } else {
@@ -148,10 +133,9 @@ void Server::sendOwnerApproveMergeResponse(int client_fd, const Protocol::OwnerA
 
 void Server::handleAuthRequest(int client_fd, const std::vector<uint8_t>& buffer) {
     const auto& request = Protocol::decodeAuthRequest(buffer);
-    std::cout << "Auth request from client " << client_fd << std::endl;
-    std::cout << request->login << std::endl;
-    std::cout << request->password << std::endl;
-
+//    std::cout << "Auth request from client " << client_fd << std::endl;
+//    std::cout << request->login << std::endl;
+//    std::cout << request->password << std::endl;
     Protocol::AuthResponse response;
     response.op = Protocol::Operation::AUTH;
     auto result = m_repository->validateUser(request->login, request->password);
@@ -167,31 +151,29 @@ void Server::handleAuthRequest(int client_fd, const std::vector<uint8_t>& buffer
 
 void Server::handleRegistrationRequest(int client_fd, const std::vector<uint8_t>& buffer) {
     const auto& request = Protocol::decodeRegistrationRequest(buffer);
-    std::cout << "Registration request from client " << client_fd << std::endl;
-    std::cout << request->login << std::endl;
-    std::cout << request->password << std::endl;
+//    std::cout << "Registration request from client " << client_fd << std::endl;
+//    std::cout << request->login << std::endl;
+//    std::cout << request->password << std::endl;
     Protocol::RegistrationResponse response;
-
     response.op = Protocol::Operation::REGISTRATION;
     auto result = m_repository->validateUser(request->login, request->password);
     if (result) {
         response.status = 1;
         response.user_id = *result;
     } else {
-        std::cout << "Registration: user not found, adding new user" << std::endl;
+//        std::cout << "Registration: user not found, adding new user" << std::endl;
         response.status = 0;
         response.user_id = m_repository->addUser(request->login, request->password);
         m_clients[static_cast<int>(response.user_id)] = client_fd;
-        std::cout << "Registration status is: " << static_cast<int>(response.status) << std::endl;
-        std::cout << "New user id is: " << response.user_id << std::endl;
-        std::cout << "m_clients map value by key " << static_cast<int>(response.user_id) << "is: " << m_clients[static_cast<int>(response.user_id)] << std::endl;
+//        std::cout << "Registration status is: " << static_cast<int>(response.status) << std::endl;
+//        std::cout << "New user id is: " << response.user_id << std::endl;
+//        std::cout << "m_clients map value by key " << static_cast<int>(response.user_id) << "is: " << m_clients[static_cast<int>(response.user_id)] << std::endl;
     }
     sendRegistrationResponse(client_fd, response);
 }
 
 void Server::handleGetNotesRequest(int client_fd, const std::vector<uint8_t>& buffer) {
     const auto& request = Protocol::decodeGetNotesRequest(buffer);
-
     Protocol::GetNotesResponse response;
     response.op = Protocol::Operation::GET_NOTES;
     response.notes = m_repository->getNotesForUser(request->user_id);
@@ -201,73 +183,64 @@ void Server::handleGetNotesRequest(int client_fd, const std::vector<uint8_t>& bu
 void Server::handleSyncRequest(int client_fd, const std::vector<uint8_t>& buffer) {
     const auto& request = Protocol::decodeSyncRequest(buffer);
     const auto& [_, text, version] = m_repository->getNoteInfoToSync(request->note_id, request->user_id);
-
     Protocol::SyncNoteResponse response;
     response.op = Protocol::Operation::SYNC;
     response.text = text;
     response.version = version;
-
     sendSyncResponse(client_fd, response);
 }
 
 void Server::handleCreateNoteRequest(int client_fd, const std::vector<uint8_t>& buffer) {
-    std::cout << "Create note request" << std::endl;
+//    std::cout << "Create note request" << std::endl;
     const auto& request = Protocol::decodeCreateNoteRequest(buffer);
-    std::cout << "User id, who want to create note: " << request->user_id << std::endl;
-    std::cout << "Note title: " << request->note_title << std::endl;
-
+//    std::cout << "User id, who want to create note: " << request->user_id << std::endl;
+//    std::cout << "Note title: " << request->note_title << std::endl;
     Protocol::CreateNoteResponse response;
     response.op = Protocol::Operation::CREATE_NOTE;
-
     if (m_repository->isNoteExists(request->user_id, request->note_title)) {
-        std::cout << "Note with this name is already exists for this user" << std::endl;
+//        std::cout << "Note with this name is already exists for this user" << std::endl;
         response.status = 1;
         response.note_id = 0;
     } else {
-        std::cout << "Creating new note" << std::endl;
+//        std::cout << "Creating new note" << std::endl;
         response.status = 0;
         auto result = m_repository->addNote(request->user_id, request->note_title);
         response.note_id = result.first;
         response.note_title = request->note_title;
         response.version = result.second;
-        std::cout << "After adding new note with title:" << response.note_title << " and id: " << response.note_id << std::endl;
+//        std::cout << "After adding new note with title:" << response.note_title << " and id: " << response.note_id << std::endl;
     }
-
     sendCreateNoteResponse(client_fd, response);
 }
 
 void Server::handleOpenNoteRequest(int client_fd, const std::vector<uint8_t>& buffer) {
     const auto& request = Protocol::decodeOpenNoteRequest(buffer);
-
     Protocol::OpenNoteResponse response;
     response.op = Protocol::Operation::OPEN_NOTE;
-
     if (m_repository->isNoteExists(request->user_id, request->note_id)) {
-        std::cout << "Note exits when trying to open note" << std::endl;
+//        std::cout << "Note exits when trying to open note" << std::endl;
         response.status = 0;
         response.note_id = request->note_id;
         response.text = m_repository->getNoteText(request->user_id, request->note_id);
         response.version = m_repository->getNoteVersion(request->user_id, request->note_id);
     } else {
-        std::cout << "Note doesn't exist when trying to open note" << std::endl;
+//        std::cout << "Note doesn't exist when trying to open note" << std::endl;
         response.status = 1;
     }
-
     sendOpenNoteResponse(client_fd, response);
 }
 
 void Server::handleUpdateTextRequest(int client_fd, const std::vector<uint8_t>& buffer) {
     const auto& request = Protocol::decodeUpdateTextRequest(buffer);
-    std::cout << "Update note request" << std::endl;
-    std::cout << "User with id - " << request->user_id << std::endl;
-    std::cout << "What to update note with id - " << request->note_id << std::endl;
-    std::cout << "New text for this note is: " << request->text << std::endl;
+//    std::cout << "Update note request" << std::endl;
+//    std::cout << "User with id - " << request->user_id << std::endl;
+//    std::cout << "What to update note with id - " << request->note_id << std::endl;
+//    std::cout << "New text for this note is: " << request->text << std::endl;
     Protocol::UpdateTextResponse response;
     response.op = Protocol::Operation::UPDATE_TEXT;
-
     if (m_repository->isContainsConflict(request->user_id, request->note_id, request->version)) {
         response.status = 1;
-        std::cerr << "we have conflict after update request" << std::endl;
+//        std::cerr << "we have conflict after update request" << std::endl;
     } else {
         response.note_id = request->note_id;
         response.status = 0;
@@ -280,66 +253,90 @@ void Server::handleUpdateTextRequest(int client_fd, const std::vector<uint8_t>& 
 
 void Server::handleShareNoteRequest(int client_fd, const std::vector<uint8_t>& buffer) {
     const auto& req = Protocol::decodeShareNoteRequest(buffer);
-    std::cout << "User with id: " << req->user_id << std::endl;
-    std::cout << "What to share note with id: " << req->note_id << std::endl;
-
+//    std::cout << "User with id: " << req->user_id << std::endl;
+//    std::cout << "What to share note with id: " << req->note_id << std::endl;
     m_repository->shareNoteToAllUsers(req->user_id, req->note_id);
-
     Protocol::ShareNoteNotifyRequest request;
     request.op = Protocol::Operation::SHARE_NOTE_NOTIFY;
     request.note_id = req->note_id;
     request.owner_id = req->user_id;
-
     const auto& [title, text, version] = m_repository->getNoteInfo(req->note_id, req->user_id);
-
     request.note_title = title;
     request.version = version;
-
     sendShareNoteNotifyRequest(client_fd, request);
 }
 
 void Server::handleApproveMergeRequest(int client_fd, const std::vector<uint8_t>& buffer) {
     const auto& req = Protocol::decodeApproveMergeRequest(buffer);
-    std::cout << "Got approve merge request" << std::endl;
+//    std::cout << "Got approve merge request" << std::endl;
     // status 0 -> owner approve
     if (req->status == 0) {
         Id note_owner_id = m_repository->getOwnerId(req->note_id);
-        std::cout << "Note owner id is: " << note_owner_id << std::endl;
+//        std::cout << "Note owner id is: " << note_owner_id << std::endl;
         int client_fd_owner = m_clients[static_cast<int>(note_owner_id)];
-        std::cout << "Note owner client_fd is: " << client_fd_owner << std::endl;
+//        std::cout << "Note owner client_fd is: " << client_fd_owner << std::endl;
 
         // посылаем запрос владельцу заметки для того, чтобы он одобрил merge request
         Protocol::OwnerApproveMergeRequest request;
         request.note_id = req->note_id;
         request.approve_text = req->merged_text;
         request.merge_sender_id = req->user_id;
-
         sendOwnerApproveMergeRequest(client_fd_owner, request);
     }
     // status 1 -> server approve
     else if (req->status == 1) {
         Protocol::ServerApproveMergeRequest request;
         request.note_id = req->note_id;
-        std::cout << "Server approve merge request" << std::endl;
+//        std::cout << "Server approve merge request" << std::endl;
         const auto& [version, server_text] = m_repository->getOwnerDataVersion(req->note_id);
-        std::cout << "Version on server is: " << version << std::endl;
-        std::cout << "Version of note on sever is: " << std::endl << server_text << std::endl;
+//        std::cout << "Version on server is: " << version << std::endl;
+//        std::cout << "Version of note on sever is: " << std::endl << server_text << std::endl;
         request.version = version;
         request.server_version = server_text;
-
         sendServerApproveMergeRequest(client_fd, request);
     }
 }
 
-void Server::handleOwnerApproveMergeRequest(int client_fd, const std::vector<uint8_t>& buffer) {
-    const auto& req = Protocol::decodeOwnerApproveMergeRequest(buffer);
+void Server::handleOwnerApproveMergeResponse(int client_fd, const std::vector<uint8_t>& buffer) {
+    const auto& response = Protocol::decodeOwnerApproveMergeResponse(buffer);
+//    std::cout << "Got handle owner approve merge response" << std::endl;
+//    std::cout << "Response data is: " << std::endl;
+//    std::cout << "Note id is: " << response->note_id << std::endl;
+//    std::cout << "Response sender id is: " << response->sender_id << std::endl;
+//    std::cout << "New note version is: " << response->new_version << std::endl;
+//    std::cout << "Response status is: " << static_cast<int>(response->status) << std::endl;
+//    std::cout << "Result owner approved text is: " << response->approved_text << std::endl;
 
-    Protocol::OwnerApproveMergeResponse response;
+    // владелец заметки принял изменения, нужно обновить данную заметку для всех пользователей
+    // и разослать запросы с обновлением текста, если она у них открыта
+    if (response->status == 0) {
+        Protocol::UpdateTextMergedRequest request;
+        request.note_id = response->note_id;
+        request.version = response->new_version;
+        request.merged_version = response->approved_text;
+        const auto& user_to_send = m_repository->getNoteUsers(response->note_id);
+        // обновить версию и текст заметки для заметки у всех пользователей
+        m_repository->updateNoteAfterMerge(response->note_id, response->new_version, response->approved_text);
+        std::vector<int> fd_clients;
+        fd_clients.reserve(user_to_send.size());
+        for (const uint32_t client : user_to_send) {
+            fd_clients.emplace_back(m_clients[static_cast<int>(client)]);
+        }
 
-    sendOwnerApproveMergeResponse(client_fd, response);
-}
-
-void Server::handleShareNoteNotifyRequest(int client_fd, const std::vector<uint8_t>& buffer) {
+        for (const uint32_t fd_client : fd_clients) {
+            sendUpdateTextMergedRequest(static_cast<int>(fd_client), request);
+        }
+    }
+    // владелец заметки отклонил изменения, нужно отправить создателю merge request запрос на то, что измненеия отклонены
+    else if (response->status == 1) {
+        Protocol::UpdateTextMergedRequest request;
+        request.note_id = response->note_id;
+        const auto& [owner_version, owner_text] = m_repository->getOwnerDataVersion(response->note_id);
+        request.merged_version = owner_text;
+        request.version = owner_version;
+        int fd_merge_sender = m_clients[static_cast<int>(response->sender_id)];
+        sendUpdateTextMergedRequest(fd_merge_sender, request);
+    }
 }
 
 size_t Server::getMessageLength(Protocol::Operation op,
@@ -352,7 +349,6 @@ size_t Server::getMessageLength(Protocol::Operation op,
             uint16_t loginLen, passwordLen;
             std::memcpy(&loginLen, buffer.data() + offset + 2, sizeof(uint16_t));
             std::memcpy(&passwordLen, buffer.data() + offset + 4, sizeof(uint16_t));
-
             return 6 + loginLen + passwordLen;
         }
         case Protocol::Operation::REGISTRATION: {
@@ -361,7 +357,6 @@ size_t Server::getMessageLength(Protocol::Operation op,
             uint16_t loginLen, passwordLen;
             std::memcpy(&loginLen, buffer.data() + offset + 2, sizeof(uint16_t));
             std::memcpy(&passwordLen, buffer.data() + offset + 4, sizeof(uint16_t));
-
             return 6 + loginLen + passwordLen;
         }
         case Protocol::Operation::GET_NOTES: {
@@ -372,9 +367,9 @@ size_t Server::getMessageLength(Protocol::Operation op,
         }
         case Protocol::Operation::CREATE_NOTE: {
             uint16_t titleLen;
-            std::cout << "offset is: " << offset << std::endl;
+//            std::cout << "offset is: " << offset << std::endl;
             std::memcpy(&titleLen, buffer.data() + offset + 2 + 4, sizeof(uint16_t));
-            std::cout << "Create note message size: " << 8 + titleLen << std::endl;
+//            std::cout << "Create note message size: " << 8 + titleLen << std::endl;
             return 8 + titleLen;
         }
         case Protocol::Operation::OPEN_NOTE: {
@@ -383,24 +378,23 @@ size_t Server::getMessageLength(Protocol::Operation op,
         case Protocol::Operation::UPDATE_TEXT: {
             uint32_t textLen;
             std::memcpy(&textLen, buffer.data() + offset + 2 + 4 + 4 + 4, sizeof(textLen));
-            std::cout << "Update note text message size: " << 2 + 4 + 4 + 4 + 4 + textLen << std::endl;
+//            std::cout << "Update note text message size: " << 2 + 4 + 4 + 4 + 4 + textLen << std::endl;
             return 2 + 4 + 4 + 4 + 4 + textLen;
         }
         case Protocol::Operation::SHARE_NOTE: {
             return 2 + 4 + 4;
         }
         case Protocol::Operation::APPROVE_MERGE: {
-//            uint32_t note_id;
-//            uint32_t user_id;
-//            uint8_t status;
-//            std::string merged_text;
             uint32_t textLen;
             std::memcpy(&textLen, buffer.data() + offset + 2 + 4 + 4 + 1, sizeof(textLen));
-            std::cout << "Got approve merge request with size: " << 2 + 4 + 4 + 4 + 1 + textLen << std::endl;
+//            std::cout << "Got approve merge request with size: " << 2 + 4 + 4 + 4 + 1 + textLen << std::endl;
             return 2 + 4 + 4 + 4 + 1 + textLen;
         }
         case Protocol::Operation::OWNER_APPROVE_MERGE: {
-            return 0;
+            uint32_t textLen;
+            std::memcpy(&textLen, buffer.data() + offset + 2 + 4 + 4 + 4 + 1, sizeof(textLen));
+//            std::cout << "Got owner approve merge response with size: " << 2 + 4 + 4 + 4 + 1 + 4 + textLen << std::endl;
+            return 2 + 4 + 4 + 4 + 1 + 4 + textLen;
         }
         default:
             std::cerr << "Unknown operation: " << static_cast<int>(op) << std::endl;
@@ -410,8 +404,7 @@ size_t Server::getMessageLength(Protocol::Operation op,
 
 void Server::processClientMessage(int client_fd, const std::vector<uint8_t>& message) {
     const Protocol::Operation op = Protocol::decodeOperation(message);
-    std::cout << "Processing message with operation code: " << static_cast<int>(op) << std::endl;
-
+//    std::cout << "Processing message with operation code: " << static_cast<int>(op) << std::endl;
     try {
         switch (op) {
             case Protocol::Operation::AUTH: {
@@ -450,6 +443,10 @@ void Server::processClientMessage(int client_fd, const std::vector<uint8_t>& mes
                 handleApproveMergeRequest(client_fd, message);
                 break;
             }
+            case Protocol::Operation::OWNER_APPROVE_MERGE: {
+                handleOwnerApproveMergeResponse(client_fd, message);
+                break;
+            }
 
             default:
                 std::cerr << "Unknown operation from client " << client_fd
@@ -465,7 +462,6 @@ void Server::processClientMessage(int client_fd, const std::vector<uint8_t>& mes
 void Server::processClientMessages(int client_fd) {
     std::vector<uint8_t> buffer;
     char temp_buffer[4096];
-
     while (true) {
         ssize_t received = recv(client_fd, temp_buffer, sizeof(temp_buffer), 0);
 
@@ -482,48 +478,37 @@ void Server::processClientMessages(int client_fd) {
         std::cout << "Received " << received << " bytes from client " << client_fd
                   << ", total buffer size: " << buffer.size() << std::endl;
 
-        // Обрабатываем все полные сообщения в буфере
         while (true) {
-            // Проверяем, что есть хотя бы 2 байта для opcode
             if (buffer.size() < 2) {
-                break; // Ждем больше данных
+                break;
             }
 
             uint16_t opCode;
             std::memcpy(&opCode, buffer.data(), sizeof(uint16_t));
             auto operation = static_cast<Protocol::Operation>(opCode);
 
-//            std::cout << "Opcode received: " << opCode
-//                      << " (" << operationToString(operation) << ")" << std::endl;
-
-            // Получаем длину сообщения
             size_t messageLength = getMessageLength(operation, buffer, 0);
 
             if (messageLength == 0) {
-                // Не можем определить длину - ждем больше данных
                 std::cout << "Cannot determine message length, waiting for more data"
                           << std::endl;
                 break;
             }
 
-            // Проверяем, есть ли полное сообщение
             if (buffer.size() < messageLength) {
                 std::cout << "Incomplete message: have " << buffer.size()
                           << ", need " << messageLength << " bytes" << std::endl;
-                break; // Ждем остальные данные
+                break;
             }
 
-            // Извлекаем полное сообщение
             std::vector<uint8_t> message(buffer.begin(),
                                          buffer.begin() + messageLength);
 
             std::cout << "Processing " << messageLength
                       << " bytes for operation " << opCode << std::endl;
 
-            // Обрабатываем сообщение
             processClientMessage(client_fd, message);
 
-            // Удаляем обработанное сообщение из буфера
             buffer.erase(buffer.begin(), buffer.begin() + messageLength);
 
             std::cout << "Buffer after processing: " << buffer.size()
@@ -603,14 +588,12 @@ void Server::run() {
 void Server::stop() {
     m_running = false;
 
-    // 1) Разбудить accept()
     if (m_server_fd >= 0) {
-        shutdown(m_server_fd, SHUT_RDWR); // важно
+        shutdown(m_server_fd, SHUT_RDWR);
         close(m_server_fd);
         m_server_fd = -1;
     }
 
-    // 2) Разбудить recv() у всех клиентов
     {
         std::lock_guard<std::mutex> lk(m_clients_mutex);
         for (int fd : m_connected_clients) {
@@ -622,29 +605,9 @@ void Server::stop() {
         m_connected_clients.clear();
     }
 
-    // 3) Теперь можно join()
     for (auto& t : m_client_threads) {
         if (t.joinable()) t.join();
     }
     m_client_threads.clear();
-
     std::cout << "Server stopped" << std::endl;
-
-
-
-//    m_running = false;
-//
-//    for (auto& thread : m_client_threads) {
-//        if (thread.joinable()) {
-//            thread.join();
-//        }
-//    }
-//    m_client_threads.clear();
-//
-//    if (m_server_fd >= 0) {
-//        close(m_server_fd);
-//        m_server_fd = -1;
-//    }
-//
-//    std::cout << "Server stopped" << std::endl;
 }

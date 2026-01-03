@@ -44,14 +44,11 @@ public:
 
     std::pair<uint32_t, std::string> getOwnerDataVersion(uint32_t note_id);
 
-//    Id note_id;
-//    std::string title;
-//    std::string text;
-//    Id version;
-//    Id owner_id;
+    std::vector<uint32_t> getNoteUsers(uint32_t note_id);
 
-    // title, is_shared, version, owner_id
     std::map<uint32_t, std::tuple<std::string, bool, uint32_t, uint32_t>> getNotesForUser(uint32_t user_id);
+
+    void updateNoteAfterMerge(uint32_t note_id, uint32_t version, const std::string& merged_text);
 
 private:
     int m_users_count = 0;

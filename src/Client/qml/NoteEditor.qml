@@ -201,8 +201,6 @@ ApplicationWindow {
         }
 
         onAccepted: {
-            // TODO: Добавить метод удаления заметки
-            console.log("Deleting note:", noteId)
             noteWindow.close()
         }
     }
@@ -220,7 +218,6 @@ ApplicationWindow {
         }
 
         onAccepted: {
-            console.log("Sharing note:", noteId);
             notesManager.shareNoteWithEveryone(noteId, localVersion);
         }
     }
@@ -232,19 +229,13 @@ ApplicationWindow {
         noteTitle: titleField.text
 
          onAcceptServer: {
-            // Пользователь выбрал принять серверную версию
             notesManager.serverApprove(conflictDialog.noteId)
-            // conflictDetected = false
-            // localVersion = serverVersion
-            // textArea.text = conflictDialog.serverContent
-            // hasUnsavedChanges = false
         }
 
         onMergeManually: function(noteId, editedContent) {
-            // Пользователь выбрал ручное слияние
             conflictDetected = false
-            localVersion++ // Увеличиваем версию
-            textArea.text = editedContent // Текст после ручного редактирования
+            localVersion++
+            textArea.text = editedContent
             notesManager.ownerApprove(noteId, editedContent);
             hasUnsavedChanges = false
         }
@@ -255,12 +246,8 @@ ApplicationWindow {
         anchors.centerIn: parent
 
         onAcceptMerge: function(noteId, text, version, merge_sender_id) {
-            // Владелец принял слияние
-            console.log("Owner accepted merge for note:", noteId)
-            // NotesManager::approveMerge(int noteId, const QString& approved_merge, int version, int merge_sender_id)
             notesManager.approveMerge(noteId, text, version, merge_sender_id)
 
-            // Обновляем локальный текст и версию
             textArea.text = text
             localVersion = version
             serverVersion = version
@@ -268,14 +255,11 @@ ApplicationWindow {
         }
 
         onRejectMerge: function(noteId, text, version, merge_sender_id) {
-            console.log("Owner rejected merge for note:", noteId)
-            // NotesManager::rejectMerge(int noteId, const QString& owner_version, int version, int merge_sender_id)
             notesManager.rejectMerge(noteId, text, version, merge_sender_id)
         }
     }
 
     function createOwnerApproveDialog(noteId, merge_sender_id, approve_text) {
-        // Заполняем диалог данными
         approveMergeDialog.noteId = noteId
         approveMergeDialog.noteTitle = titleField.text
         approveMergeDialog.mergeAuthor = merge_sender_id
@@ -360,6 +344,18 @@ ApplicationWindow {
             conflictDialog.close()
         }
 
+        function onUpdateTextMerged(noteId, version, merged_version) {
+            if (noteId !== noteWindow.noteId)
+                return
+
+            textArea.text = merged_version
+            noteWindow.initialText = merged_version
+            noteWindow.localVersion = version
+            noteWindow.serverVersion = version
+            noteWindow.hasUnsavedChanges = false
+            noteWindow.conflictDetected = false
+        }
+
         function createOwnerApproveDialog(noteId, merge_sender_id, approve_text) {
             if (noteId !== noteWindow.noteId)
                 return
@@ -371,55 +367,38 @@ ApplicationWindow {
 
 
             if (component.status === Component.Ready) {
-                // 2. Создаем экземпляр диалога
                 var dialog = component.createObject(noteWindow, {
                     noteId: noteId,
                     mergeAuthor: merge_sender_id,
-                    // mergeAuthor: "Пользователь #" + merge_sender_id,
-                    mergeVersion: localVersion + 1, // Следующая версия
+                    mergeVersion: localVersion + 1,
                     mergedText: approve_text,
                     originalText: textArea ? textArea.text : "",
-                    // noteTitle: titleField ? titleField.text : "Без названия"
                 })
 
                 if (dialog === null) {
                     console.error("Ошибка создания диалога:", component.errorString())
                     return
                 }
-
-                // 3. Подключаем сигналы диалога
-                // (int noteId, const QString& approved_merge, int version, int merge_sender_id)
                 dialog.acceptMerge.connect(function(dialogNoteId, text, version, merge_sender_id) {
-                    console.log("Accept merge for note:", dialogNoteId, "version:", version)
-
-                    // Вызываем метод notesManager
                     notesManager.approveMerge(dialogNoteId, text, version, merge_sender_id)
 
-                    // Обновляем локальный текст
                     if (textArea) {
                         textArea.text = text
                     }
                     localVersion = version
                     hasUnsavedChanges = false
 
-                    // Закрываем диалог
                     dialog.close()
                     dialog.destroy()
                 })
 
-                // (int noteId, const QString& approved_merge, int version, int merge_sender_id)
                 dialog.rejectMerge.connect(function(dialogNoteId, text, version, merge_sender_id) {
-                    console.log("Reject merge for note:", dialogNoteId)
-
-                    // Вызываем метод notesManager
                     notesManager.rejectMerge(dialogNoteId, text, version, merge_sender_id)
 
-                    // Закрываем диалог
                     dialog.close()
                     dialog.destroy()
                 })
 
-                // 4. Показываем диалог
                 dialog.open()
 
             } else if (component.status === Component.Error) {

@@ -318,6 +318,29 @@ std::pair<uint32_t, std::string> Repository::getOwnerDataVersion(uint32_t note_i
     });
 
     return {(*note)->getVersion(), (*note)->getText()};
+}
 
-//    return (*note)->getText();
+std::vector<uint32_t> Repository::getNoteUsers(uint32_t note_id) {
+    std::vector<uint32_t> result;
+    for (const auto& [user, notes] : m_notes_map) {
+        const auto note = std::ranges::find_if(notes, [&](const auto& note){
+            return note->getId() == note_id;
+        });
+        if (note != notes.end()) {
+            result.emplace_back(user->getId());
+        }
+    }
+    return result;
+}
+
+void Repository::updateNoteAfterMerge(uint32_t note_id, uint32_t version, const std::string& merged_text) {
+    for (const auto& [user, notes] : m_notes_map) {
+        auto note = std::ranges::find_if(notes, [&](const auto& note){
+            return note->getId() == note_id;
+        });
+        if (note != notes.end()) {
+            (*note)->setText(merged_text);
+            (*note)->setVersion(version);
+        }
+    }
 }

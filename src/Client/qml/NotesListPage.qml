@@ -16,7 +16,6 @@ ApplicationWindow {
 
     Component.onCompleted: {
         if (notesManager && userId > 0) {
-            console.log("Loading notes for user:", window.userId);
             notesManager.getNotes();
         } else {
             console.warn("Cannot load notes: notesManager =", notesManager, ", userId =", window.userId);
@@ -251,7 +250,6 @@ ApplicationWindow {
                         MenuItem {
                             text: "Поделиться со всеми"
                             onTriggered: {
-                                console.log("Sharing note:", noteId);
                                 notesManager.shareNoteWithEveryone(noteId, version);
                             }
                         }
@@ -260,7 +258,6 @@ ApplicationWindow {
 
                         MenuItem {
                             text: "Удалить"
-                            onTriggered: console.log("Delete:", noteId)
                         }
                     }
 
@@ -269,14 +266,12 @@ ApplicationWindow {
 
                         MenuItem {
                             text: "Отменить расшаривание"
-                            onTriggered: console.log("Unshare:", noteId)
                         }
 
                         MenuSeparator {}
 
                         MenuItem {
                             text: "Копировать ссылку"
-                            onTriggered: console.log("Copy link for:", noteId)
                         }
                     }
 
@@ -285,12 +280,10 @@ ApplicationWindow {
 
                         MenuItem {
                             text: "Сделать копию"
-                            onTriggered: console.log("Make copy of:", noteId)
                         }
 
                         MenuItem {
                             text: "Отписаться"
-                            onTriggered: console.log("Unsubscribe from:", noteId)
                         }
                     }
                 }
@@ -373,7 +366,6 @@ ApplicationWindow {
                     isNoteShared: isShared,
                     localVersion: version
                 })
-                console.log("Editor created:", editor)
             } else {
                 console.error("Failed to load NoteEditor:", component.errorString())
             }

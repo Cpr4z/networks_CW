@@ -16,8 +16,6 @@ set(SOURCES
 
 set(QT
     qml.qrc
-    src/ClientWindow.hpp
-    src/ClientWindow.cpp
     src/AuthManager.hpp
     src/AuthManager.cpp
     src/NotesManager.hpp

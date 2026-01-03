@@ -17,5 +17,6 @@ namespace Protocol {
         APPROVE_MERGE = 0x0010,
         OWNER_APPROVE_MERGE = 0x0011,
         SERVER_APPROVE_MERGE = 0x0012,
+        UPDATE_TEXT_MERGED = 0x0013,
     };
 }

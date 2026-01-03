@@ -32,15 +32,12 @@ public:
 
     explicit NotesModel(QObject* parent = nullptr);
 
-    // QAbstractListModel interface
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
     QVariant data(const QModelIndex& index, int role) const override;
     QHash<int, QByteArray> roleNames() const override;
 
-    // API
     void addPersonalNote(int id, const QString& title, int ownerId, int version);
     void addSharedNote(int id, const QString& title, int ownerId, int version);
-    const NoteItem& noteAt(int row) const;
     bool containsNote(int note_id);
 
 private:

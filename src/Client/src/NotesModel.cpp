@@ -1,7 +1,5 @@
 #include "NotesModel.hpp"
 
-#include <iostream>
-
 NotesModel::NotesModel(QObject* parent)
         : QAbstractListModel(parent) {
 }
@@ -28,12 +26,11 @@ QVariant NotesModel::data(const QModelIndex& index, int role) const {
 
 QString NotesModel::getTitleById(int noteId) const {
     for (const auto& note : m_notes) {
-        std::cout << "Title of note with id "<< noteId << note.title.toStdString()   << std::endl;
         if (note.noteId == noteId) {
             return note.title;
         }
     }
-    return QString();
+    return {};
 }
 
 QHash<int, QByteArray> NotesModel::roleNames() const {
@@ -48,7 +45,6 @@ QHash<int, QByteArray> NotesModel::roleNames() const {
 
 void NotesModel::addPersonalNote(int id, const QString& title, int ownerId, int version) {
     if (containsNote(id)) {
-        std::cout << "Personal note with id: " << id << " is already exists" << std::endl;
         return;
     }
     const int row = m_notes.size();
@@ -59,17 +55,12 @@ void NotesModel::addPersonalNote(int id, const QString& title, int ownerId, int 
 
 void NotesModel::addSharedNote(int id, const QString& title, int ownerId, int version) {
     if (containsNote(id)) {
-        std::cout << "Shared note with id: " << id << " is already exists" << std::endl;
         return;
     }
     const int row = m_notes.size();
     beginInsertRows(QModelIndex(), row, row);
     m_notes.push_back({ id, title, true, ownerId, version });
     endInsertRows();
-}
-
-const NoteItem& NotesModel::noteAt(int row) const {
-    return m_notes.at(row);
 }
 
 int NotesModel::personalNotesCount() const {
@@ -97,26 +88,3 @@ bool NotesModel::containsNote(int note_id) {
     });
     return note != m_notes.end();
 }
-
-//void NotesModel::updateNoteVersion(uint32_t note_id, uint32_t version) {
-//    auto note = std::ranges::find_if(m_notes, [&](const auto& item){
-//        return item.noteId == note_id;
-//    });
-//
-//    if (note == m_notes.end()) {
-//        std::cerr << "No note found to update version" << std::endl;
-//        return;
-//    }
-//
-//    int oldVersion = note->version;
-//
-//    // Меняем данные
-//    note->version = static_cast<int>(version);
-//
-//    // Находим индекс измененного элемента
-//    int row = std::distance(m_notes.begin(), note);
-//
-//    // Уведомляем модель об изменении
-//    QModelIndex modelIndex = index(row, 0);
-//    emit dataChanged(modelIndex, modelIndex, {VersionRole});
-//}

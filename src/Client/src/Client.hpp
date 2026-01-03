@@ -4,13 +4,9 @@
 #include <vector>
 
 #include <QObject>
-#include <QJsonObject>
-#include <QJsonArray>
 #include <QTcpSocket>
 
-
 #include <Protocol.hpp>
-
 #include <Note.hpp>
 
 class NoteClient : public QObject {
@@ -28,10 +24,8 @@ public:
     void sendSyncNoteRequest(uint32_t note_id);
     void sendApproveMergeRequest(uint32_t noteId, uint8_t status, const QString& merged_version);
 
-
     void sendOwnerApproveMergeResponse(uint32_t noteId, uint32_t new_version, uint32_t merge_sender_id, uint8_t result_code, const QString& approved_version);
-
-
+    
 signals:
     // AUTH
     void authSuccess(uint32_t userId);
@@ -63,6 +57,8 @@ signals:
 
     void approveServerVersion(uint32_t note_id, uint32_t version, const QString& server_version);
 
+    void updateTextMerged(uint32_t note_id, uint32_t version, const QString& merged_version);
+
 private slots:
     void onReadyRead();
 
@@ -75,12 +71,11 @@ private:
     void handleOpenNoteResponse(const std::vector<uint8_t>& buffer);
     void handleUpdateTextResponse(const std::vector<uint8_t>& buffer);
     void handleShareNoteResponse(const std::vector<uint8_t>& buffer);
-    void handleApproveMergeResponse(const std::vector<uint8_t>& buffer);
-//    void handleOwnerApproveMergeResponse(const std::vector<uint8_t>& buffer);
 
     void handleShareNoteNotifyRequest(const std::vector<uint8_t>& buffer);
     void handleOwnerApproveMergeRequest(const std::vector<uint8_t>& buffer);
     void handleServerApproveMergeRequest(const std::vector<uint8_t>& buffer);
+    void handleUpdateTextMergedRequest(const std::vector<uint8_t>& buffer);
 
 private:
     uint32_t m_user_id = 0;
@@ -88,4 +83,3 @@ private:
 };
 
 using ClientPtr = std::unique_ptr<NoteClient>;
-using ClientsMap = Map<Id, ClientPtr>;

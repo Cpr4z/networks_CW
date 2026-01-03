@@ -74,4 +74,10 @@ namespace Protocol {
         uint32_t version;
         std::string server_version;
     };
+
+    struct UpdateTextMergedRequest {
+        uint32_t note_id;
+        uint32_t version;
+        std::string merged_version;
+    };
 }

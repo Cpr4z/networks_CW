@@ -20,7 +20,6 @@ Dialog {
     title: "Подтверждение изменений"
 
     property int noteId: -1
-    // property string mergeAuthor: ""
     property int mergeAuthor: -1
     property int mergeVersion: 0
 
@@ -102,7 +101,6 @@ Dialog {
             Button {
                 text: "Отклонить"
                 onClicked: {
-                    // function(noteId, text, version, merge_sender_id)
                     dialog.rejectMerge(dialog.noteId, dialog.originalText, dialog.mergeVersion, dialog.mergeAuthor)
                     dialog.close()
                 }
