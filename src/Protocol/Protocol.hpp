@@ -5,7 +5,6 @@
 
 #include "Requests.hpp"
 #include "Responses.hpp"
-
 #include "Operation.hpp"
 
 namespace Protocol {
@@ -57,21 +56,15 @@ namespace Protocol {
 
     // SHARE_NOTE
     std::vector<uint8_t> encodeShareNoteRequest(const ShareNoteRequest& req);
-//    std::vector<uint8_t> encodeShareNoteResponse(const ShareNoteResponse& resp);
     std::optional<ShareNoteRequest> decodeShareNoteRequest(const std::vector<uint8_t>& buffer);
-//    std::optional<ShareNoteResponse> decodeShareNoteResponse(const std::vector<uint8_t>& buffer);
 
     // SHARE_NOTE_NOTIFY
     std::vector<uint8_t> encodeShareNoteNotifyRequest(const ShareNoteNotifyRequest& req);
-//    std::vector<uint8_t> encodeShareNoteNotifyResponse(const ShareNoteNotifyResponse& resp);
     std::optional<ShareNoteNotifyRequest> decodeShareNoteNotifyRequest(const std::vector<uint8_t>& buffer);
-//    std::optional<ShareNoteNotifyResponse> decodeShareNoteNotifyResponse(const std::vector<uint8_t>& buffer);
 
     // APPROVE_MERGE
     std::vector<uint8_t> encodeApproveMergeRequest(const ApproveMergeRequest& req);
-//    std::vector<uint8_t> encodeApproveMergeResponse(const ApproveMergeResponse& resp);
     std::optional<ApproveMergeRequest> decodeApproveMergeRequest(const std::vector<uint8_t>& buffer);
-//    std::optional<ApproveMergeResponse> decodeApproveMergeResponse(const std::vector<uint8_t>& buffer);
 
     // OWNER_APPROVE_MERGE
     std::vector<uint8_t> encodeOwnerApproveMergeRequest(const OwnerApproveMergeRequest& req);
@@ -81,9 +74,7 @@ namespace Protocol {
 
     // SERVER_APPROVE_MERGE
     std::vector<uint8_t> encodeServerApproveMergeRequest(const ServerApproveMergeRequest& req);
-//    std::vector<uint8_t> encodeServerApproveMergeResponse(const OwnerApproveMergeResponse& resp);
     std::optional<ServerApproveMergeRequest> decodeServerApproveMergeRequest(const std::vector<uint8_t>& buffer);
-//    std::optional<ServerApproveMergeResponse> decodeServerApproveMergeResponse(const std::vector<uint8_t>& buffer);
 
     // UPDATE_TEXT_MERGED
     std::vector<uint8_t> encodeUpdateTextMergedRequest(const UpdateTextMergedRequest& req);

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Operation.hpp"
-
 #include <map>
+
+#include "Operation.hpp"
 
 namespace Protocol {
     struct AuthResponse {
@@ -19,7 +19,6 @@ namespace Protocol {
 
     struct GetNotesResponse {
         Operation op;
-        // id - version, is_shared, owner_id, title
         std::map<uint32_t, std::tuple<std::string, bool, uint32_t, uint32_t>> notes;
     };
 
@@ -39,10 +38,10 @@ namespace Protocol {
 
     struct OpenNoteResponse {
         Operation op;
-        uint8_t status;        // 0 = успех, 1 = ошибка
+        uint8_t status;
         uint32_t note_id;
         uint32_t version;
-        std::string title; // пока что пусть будет чтобы извещать других пользователей об изменении названия заметки
+        std::string title;
         std::string text;
     };
 
@@ -53,21 +52,6 @@ namespace Protocol {
         uint32_t version;
     };
 
-    struct ShareNoteResponse {
-
-    };
-
-    struct ShareNoteNotifyResponse {
-    };
-
-    struct ApproveMergeResponse {
-        Operation op;
-        uint32_t note_id;
-        uint32_t version;
-        uint32_t sender_id;
-        std::string new_text;
-    };
-
     struct OwnerApproveMergeResponse {
         Operation op;
         uint32_t note_id;
@@ -75,9 +59,5 @@ namespace Protocol {
         uint32_t new_version;
         uint8_t status;
         std::string approved_text;
-    };
-
-    struct ServerApproveMergeResponse {
-        Operation op;
     };
 }

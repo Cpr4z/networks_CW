@@ -4,7 +4,6 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
-#include <iostream>
 #include <thread>
 #include <vector>
 #include <atomic>
@@ -51,9 +50,6 @@ private:
     void sendCreateNoteResponse(int client_fd, const Protocol::CreateNoteResponse& response);
     void sendOpenNoteResponse(int client_fd, const Protocol::OpenNoteResponse& response);
     void sendUpdateTextResponse(int client_fd, const Protocol::UpdateTextResponse& response);
-//    void sendShareNoteResponse(int client_fd, const Protocol::ShareNoteResponse& response);
-//    void sendApproveMergeResponse(int client_fd, const Protocol::ApproveMergeResponse& response);
-//    void sendOwnerApproveMergeResponse(int client_fd, const Protocol::OwnerApproveMergeResponse& response);
 
 
     void sendShareNoteNotifyRequest(int client_fd, const Protocol::ShareNoteNotifyRequest& request);

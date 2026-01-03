@@ -6,7 +6,6 @@
 std::atomic<bool> running{true};
 
 void signal_handler(int signal) {
-    std::cout << "\nReceived signal " << signal << ", shutting down..." << std::endl;
     running = false;
 }
 
@@ -32,6 +31,5 @@ int main() {
         server_thread.join();
     }
 
-    std::cout << "Server shutdown complete" << std::endl;
     return 0;
 }

@@ -157,9 +157,6 @@ void Repository::shareNoteToAllUsers(uint32_t owner_id, uint32_t note_id) {
         return;
     }
 
-    std::cout << "Sharing note title: " << title << std::endl;
-    std::cout << "Sharing note text: " << text << std::endl;
-
     for (auto& [user_ptr, notes_vector] : m_notes_map) {
         uint32_t current_user_id = user_ptr->getId();
 
@@ -178,9 +175,6 @@ void Repository::shareNoteToAllUsers(uint32_t owner_id, uint32_t note_id) {
 
         if (!note_already_exists) {
             notes_vector.emplace_back(std::make_shared<Note>(note_id, title, text, version));
-
-            std::cout << "Shared note '" << title << "' to user with id: "
-                      << current_user_id << std::endl;
         }
     }
 }
@@ -260,7 +254,6 @@ void Repository::updateVersionForSharedNotes(uint32_t sender_id, uint32_t note_i
 
         for (auto& user_note : notes) {
             if (user_note->getId() == note_id) {
-                std::cout << "Note with id " << note_id << " for user " << note_user->getId() << " was updated to version " << note_version << std::endl;
                 user_note->setText(text);
                 user_note->setVersion(note_version);
             }

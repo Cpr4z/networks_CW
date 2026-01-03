@@ -7,13 +7,6 @@ Note::Note(Id id, const std::string& title, const std::string& text, Id version)
 
 }
 
-void Note::addUser(const User& user) {
-}
-
-void Note::removeUser(Id user_id)
-{
-}
-
 void Note::incrementVersion() {
     m_note_data.version++;
 }

@@ -2,7 +2,6 @@
 
 #include "src/AuthManager.hpp"
 #include "src/NotesManager.hpp"
-//#include "src/NotesModel.hpp"
 
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>

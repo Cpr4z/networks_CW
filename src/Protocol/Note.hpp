@@ -18,11 +18,6 @@ public:
     explicit Note(Id id, const std::string& title, Id owner_id);
     explicit Note(Id id, const std::string& title, const std::string& text, Id version);
 
-    void addUser(const User& user);
-    void removeUser(Id user_id);
-
-    void sync();
-
     void incrementVersion();
 
     Id getId() const { return m_note_data.note_id; }

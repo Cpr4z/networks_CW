@@ -1,6 +1,5 @@
 #include "Protocol.hpp"
 
-#include <iostream>
 #include <cstdint>
 #include <cstring>
 
@@ -153,7 +152,6 @@ namespace Protocol {
         uint8_t* ptr = buffer.data();
 
         auto opCode = static_cast<uint16_t>(Protocol::Operation::REGISTRATION);
-        std::cout << opCode << std::endl;
         std::memcpy(ptr, &opCode, sizeof(opCode));
         ptr += sizeof(opCode);
 
@@ -598,7 +596,6 @@ namespace Protocol {
         return resp;
     }
 
-
     std::vector<uint8_t> encodeOpenNoteRequest(const OpenNoteRequest& req) {
         std::vector<uint8_t> buffer(2 + 4 + 4);
         uint8_t* ptr = buffer.data();
@@ -840,10 +837,6 @@ namespace Protocol {
         return buffer;
     }
 
-//    std::vector<uint8_t> encodeShareNoteResponse(const ShareNoteResponse& resp) {
-//        return {};
-//    }
-
     std::optional<ShareNoteRequest> decodeShareNoteRequest(const std::vector<uint8_t>& buffer) {
         ShareNoteRequest req;
         const uint8_t* ptr = buffer.data();
@@ -862,10 +855,6 @@ namespace Protocol {
         std::memcpy(&req.version, ptr, sizeof(req.version));
         return req;
     }
-
-//    std::optional<ShareNoteResponse> decodeShareNoteResponse(const std::vector<uint8_t>& buffer) {
-//        return {};
-//    }
 
     std::vector<uint8_t> encodeShareNoteNotifyRequest(const ShareNoteNotifyRequest& req) {
         uint32_t title_len = static_cast<uint32_t>(req.note_title.size());
@@ -894,10 +883,6 @@ namespace Protocol {
 
         return buffer;
     }
-
-//    std::vector<uint8_t> encodeShareNoteNotifyResponse(const ShareNoteNotifyResponse& resp) {
-//        return {};
-//    }
 
     std::optional<ShareNoteNotifyRequest> decodeShareNoteNotifyRequest(const std::vector<uint8_t>& buffer) {
         constexpr size_t MIN_SIZE = 2 + 4 + 4 + 4;
@@ -937,10 +922,6 @@ namespace Protocol {
         return req;
     }
 
-//    std::optional<ShareNoteNotifyResponse> decodeShareNoteNotifyResponse(const std::vector<uint8_t>& buffer) {
-//        return {};
-//    }
-
     std::vector<uint8_t> encodeApproveMergeRequest(const ApproveMergeRequest& req) {
         const uint32_t text_size = static_cast<uint32_t>(req.merged_text.size());
         std::vector<uint8_t> buffer(2 + 4 + 4 + 4 + 1 + text_size);
@@ -966,31 +947,6 @@ namespace Protocol {
         return buffer;
     }
 
-//    std::vector<uint8_t> encodeApproveMergeResponse(const ApproveMergeResponse& resp) {
-//        const uint32_t text_size = static_cast<uint32_t>(resp.new_text.size());
-//        std::vector<uint8_t> buffer(2 + 1 + 4 + 4 + 4 + text_size);
-//        uint8_t* ptr = buffer.data();
-//        uint16_t op = static_cast<uint16_t>(resp.op);
-//        std::memcpy(ptr, &op, sizeof(op));
-//        ptr += sizeof(op);
-//
-//        std::memcpy(ptr, &resp.note_id, sizeof(resp.note_id));
-//        ptr += sizeof(resp.note_id);
-//
-//        std::memcpy(ptr, &resp.version, sizeof(resp.version));
-//        ptr += sizeof(resp.version);
-//
-//        std::memcpy(ptr, &resp.sender_id, sizeof(resp.sender_id));
-//        ptr += sizeof(resp.sender_id);
-//
-//        std::memcpy(ptr, &text_size, sizeof(text_size));
-//        ptr += sizeof(text_size);
-//
-//        std::memcpy(ptr, resp.new_text.data(), text_size);
-//
-//        return buffer;
-//    }
-
     std::optional<ApproveMergeRequest> decodeApproveMergeRequest(const std::vector<uint8_t>& buffer) {
         ApproveMergeRequest req;
         const uint8_t* ptr = buffer.data();
@@ -1015,34 +971,6 @@ namespace Protocol {
 
         return req;
     }
-
-//    std::optional<ApproveMergeResponse> decodeApproveMergeResponse(const std::vector<uint8_t>& buffer) {
-//        ApproveMergeResponse resp;
-//        const uint8_t* ptr = buffer.data();
-//
-//        uint16_t op;
-//        std::memcpy(&op, ptr, sizeof(op));
-//        ptr += sizeof(op);
-//        resp.op = static_cast<Operation>(op);
-//
-//        std::memcpy(&resp.note_id, ptr, sizeof(resp.note_id));
-//        ptr += sizeof(resp.note_id);
-//
-//        std::memcpy(&resp.version, ptr, sizeof(resp.version));
-//        ptr += sizeof(resp.version);
-//
-//        std::memcpy(&resp.sender_id, ptr, sizeof(resp.sender_id));
-//        ptr += sizeof(resp.sender_id);
-//
-//        uint32_t text_size;
-//        std::memcpy(&text_size, ptr, sizeof(text_size));
-//        ptr += sizeof(text_size);
-//
-//        resp.new_text.assign(reinterpret_cast<const char*>(ptr), text_size);
-//
-//        return resp;
-//    }
-
 
     std::vector<uint8_t> encodeOwnerApproveMergeRequest(const OwnerApproveMergeRequest& req) {
         const uint32_t text_size = static_cast<uint32_t>(req.approve_text.size());
@@ -1204,10 +1132,6 @@ namespace Protocol {
         return buffer;
     }
 
-//    std::vector<uint8_t> encodeServerApproveMergeResponse(const OwnerApproveMergeResponse& resp) {
-//        return {};
-//    }
-
     std::optional<ServerApproveMergeRequest> decodeServerApproveMergeRequest(const std::vector<uint8_t>& buffer) {
         constexpr size_t MIN_SIZE = 2 + 4 + 4 + 4;
         if (buffer.size() < MIN_SIZE)
@@ -1242,11 +1166,6 @@ namespace Protocol {
 
         return req;
     }
-
-//    std::optional<ServerApproveMergeResponse> decodeServerApproveMergeResponse(const std::vector<uint8_t>& buffer) {
-//        return {};
-//    }
-
 
     std::vector<uint8_t> encodeUpdateTextMergedRequest(const UpdateTextMergedRequest& req) {
         const uint32_t text_size = static_cast<uint32_t>(req.merged_version.size());

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Operation.hpp"
-
 #include<string>
+
+#include "Operation.hpp"
 
 namespace Protocol {
     struct AuthRequest {
