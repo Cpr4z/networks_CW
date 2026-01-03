@@ -101,8 +101,10 @@ ApplicationWindow {
                 }
 
                 onClicked: {
-                    if (mode === "login")
+                    if (mode === "login") {
+                        console.log("Before calling login method")
                         authManager.login(username.text, password.text)
+                    }
                     else
                         authManager.registerUser(username.text, password.text)
                 }

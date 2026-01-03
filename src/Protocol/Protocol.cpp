@@ -1,6 +1,8 @@
 #include "Protocol.hpp"
 
 #include <iostream>
+#include <cstdint>
+#include <cstring>
 
 namespace Protocol {
     Operation decodeOperation(const std::vector<uint8_t>& buffer) {
@@ -347,18 +349,18 @@ namespace Protocol {
         return response;
     }
 
-
-
-
     std::vector<uint8_t> encodeGetNotesRequest(const GetNotesRequest& req) {
-        std::vector<uint8_t> buffer(sizeof(Protocol::Operation) + sizeof(req.user_id));
-
+        std::vector<uint8_t> buffer(6);
         uint8_t* ptr = buffer.data();
 
-        Protocol::Operation op = Protocol::Operation::GET_NOTES;
-        std::memcpy(ptr, &op, sizeof(op));
+        // Явно указываем размер opcode = 2 байта (uint16_t)
+        uint16_t opCode = static_cast<uint16_t>(Protocol::Operation::GET_NOTES);
+        std::memcpy(ptr, &opCode, sizeof(uint16_t)); // Копируем 2 байта
+        ptr += sizeof(uint16_t); // Сдвигаем указатель
 
-        std::memcpy(ptr, &req.user_id, sizeof(req.user_id));
+        // Копируем user_id (4 байта)
+        std::memcpy(ptr, &req.user_id, sizeof(uint32_t));
+
         return buffer;
     }
 
@@ -366,27 +368,28 @@ namespace Protocol {
         std::vector<uint8_t> buffer;
 
         // Вычисляем общий размер заранее для эффективности
-        size_t total_size = 1 + sizeof(uint32_t); // op (1 байт) + notes_count (4 байта)
+        size_t total_size = sizeof(uint16_t) + // opcode (2 байта)
+                            sizeof(uint32_t);   // notes_count (4 байта)
+
         for (const auto& [id, note_data] : response.notes) {
             const auto& [title, is_shared, version, owner_id] = note_data;
-            total_size += sizeof(id) + // id (4 байта)
-                          sizeof(version) + // version (4 байта)
-                          sizeof(owner_id) + // owner_id (4 байта)
-                          sizeof(is_shared) +
-                          sizeof(uint32_t) + // длина title (4 байта)
-                          title.size(); // title (N байт)
+            total_size += sizeof(uint32_t) + // id (4 байта)
+                          sizeof(uint32_t) +  // version (4 байта)
+                          sizeof(uint8_t) +   // is_shared как uint8_t (1 байт)
+                          sizeof(uint32_t) +  // owner_id (4 байта)
+                          sizeof(uint32_t) +  // длина title (4 байта)
+                          title.size();       // title (N байт)
         }
 
         buffer.reserve(total_size);
 
-        // 1. Кодируем Operation (1 байт)
-        uint8_t op_byte = static_cast<uint8_t>(response.op);
-        buffer.push_back(op_byte);
+        // 1. Кодируем Operation (2 байта) - ВНИМАНИЕ: opcode uint16_t, а не uint8_t!
+        uint16_t op_code = static_cast<uint16_t>(response.op);
+        buffer.resize(sizeof(op_code));
+        std::memcpy(buffer.data(), &op_code, sizeof(op_code));
 
         // 2. Кодируем количество записей (4 байта)
         uint32_t notes_count = static_cast<uint32_t>(response.notes.size());
-
-        // Добавляем место под notes_count
         size_t old_size = buffer.size();
         buffer.resize(old_size + sizeof(notes_count));
         std::memcpy(buffer.data() + old_size, &notes_count, sizeof(notes_count));
@@ -397,137 +400,334 @@ namespace Protocol {
 
             // ID заметки (4 байта)
             old_size = buffer.size();
-            buffer.resize(old_size + sizeof(id));
-            std::memcpy(buffer.data() + old_size, &id, sizeof(id));
+            buffer.resize(old_size + sizeof(uint32_t));
+            std::memcpy(buffer.data() + old_size, &id, sizeof(uint32_t));
 
             // Version (4 байта)
             old_size = buffer.size();
-            buffer.resize(old_size + sizeof(version));
-            std::memcpy(buffer.data() + old_size, &version, sizeof(version));
+            buffer.resize(old_size + sizeof(uint32_t));
+            std::memcpy(buffer.data() + old_size, &version, sizeof(uint32_t));
+
+            // Is_shared как uint8_t (1 байт), а не bool!
+            old_size = buffer.size();
+            buffer.resize(old_size + sizeof(uint8_t));
+            uint8_t is_shared_byte = is_shared ? 1 : 0;
+            std::memcpy(buffer.data() + old_size, &is_shared_byte, sizeof(uint8_t));
 
             // Owner ID (4 байта)
             old_size = buffer.size();
-            buffer.resize(old_size + sizeof(owner_id));
-            std::memcpy(buffer.data() + old_size, &owner_id, sizeof(owner_id));
-
-            // Is shared ()
-            old_size = buffer.size();
-            buffer.resize(old_size + sizeof(is_shared));
-            std::memcpy(buffer.data() + old_size, &is_shared, sizeof(is_shared));
+            buffer.resize(old_size + sizeof(uint32_t));
+            std::memcpy(buffer.data() + old_size, &owner_id, sizeof(uint32_t));
 
             // Длина строки title (4 байта)
             uint32_t title_len = static_cast<uint32_t>(title.size());
             old_size = buffer.size();
-            buffer.resize(old_size + sizeof(title_len));
-            std::memcpy(buffer.data() + old_size, &title_len, sizeof(title_len));
+            buffer.resize(old_size + sizeof(uint32_t));
+            std::memcpy(buffer.data() + old_size, &title_len, sizeof(uint32_t));
 
             // Сама строка title (без нуль-терминатора)
             buffer.insert(buffer.end(), title.begin(), title.end());
         }
 
+        // Отладочный вывод
+        std::cout << "Encoded GET_NOTES_RESPONSE:" << std::endl;
+        std::cout << "  Opcode: " << op_code << " (0x" << std::hex << op_code << std::dec << ")" << std::endl;
+        std::cout << "  Notes count: " << notes_count << std::endl;
+        std::cout << "  Total size: " << buffer.size() << " bytes" << std::endl;
+
         return buffer;
     }
 
-    std::optional<GetNotesRequest> decodeGetNotesRequest(const std::vector<uint8_t>& buffer) {
-        if (buffer.size() < sizeof(uint32_t)) {
-            return std::nullopt; // Недостаточно данных
-        }
+//    std::vector<uint8_t> encodeGetNotesResponse(const GetNotesResponse& response) {
+//        std::vector<uint8_t> buffer;
+//
+//        // Вычисляем общий размер заранее для эффективности
+//        size_t total_size = 1 + sizeof(uint32_t); // op (1 байт) + notes_count (4 байта)
+//        for (const auto& [id, note_data] : response.notes) {
+//            const auto& [title, is_shared, version, owner_id] = note_data;
+//            total_size += sizeof(id) + // id (4 байта)
+//                          sizeof(version) + // version (4 байта)
+//                          sizeof(owner_id) + // owner_id (4 байта)
+//                          sizeof(is_shared) +
+//                          sizeof(uint32_t) + // длина title (4 байта)
+//                          title.size(); // title (N байт)
+//        }
+//
+//        buffer.reserve(total_size);
+//
+//        // 1. Кодируем Operation (1 байт)
+//        uint8_t op_byte = static_cast<uint8_t>(response.op);
+//        buffer.push_back(op_byte);
+//
+//        // 2. Кодируем количество записей (4 байта)
+//        uint32_t notes_count = static_cast<uint32_t>(response.notes.size());
+//
+//        // Добавляем место под notes_count
+//        size_t old_size = buffer.size();
+//        buffer.resize(old_size + sizeof(notes_count));
+//        std::memcpy(buffer.data() + old_size, &notes_count, sizeof(notes_count));
+//
+//        // 3. Кодируем каждую запись
+//        for (const auto& [id, note_data] : response.notes) {
+//            const auto& [title, is_shared, version, owner_id] = note_data;
+//
+//            // ID заметки (4 байта)
+//            old_size = buffer.size();
+//            buffer.resize(old_size + sizeof(id));
+//            std::memcpy(buffer.data() + old_size, &id, sizeof(id));
+//
+//            // Version (4 байта)
+//            old_size = buffer.size();
+//            buffer.resize(old_size + sizeof(version));
+//            std::memcpy(buffer.data() + old_size, &version, sizeof(version));
+//
+//            // Owner ID (4 байта)
+//            old_size = buffer.size();
+//            buffer.resize(old_size + sizeof(owner_id));
+//            std::memcpy(buffer.data() + old_size, &owner_id, sizeof(owner_id));
+//
+//            // Is shared ()
+//            old_size = buffer.size();
+//            buffer.resize(old_size + sizeof(is_shared));
+//            std::memcpy(buffer.data() + old_size, &is_shared, sizeof(is_shared));
+//
+//            // Длина строки title (4 байта)
+//            uint32_t title_len = static_cast<uint32_t>(title.size());
+//            old_size = buffer.size();
+//            buffer.resize(old_size + sizeof(title_len));
+//            std::memcpy(buffer.data() + old_size, &title_len, sizeof(title_len));
+//
+//            // Сама строка title (без нуль-терминатора)
+//            buffer.insert(buffer.end(), title.begin(), title.end());
+//        }
+//
+//        return buffer;
+//    }
 
+    std::optional<GetNotesRequest> decodeGetNotesRequest(const std::vector<uint8_t>& buffer) {
         const uint8_t* ptr = buffer.data();
 
-        Protocol::Operation op;
-        std::memcpy(&op, ptr, sizeof(op));
-        ptr += sizeof(op);
+        // 1. Читаем opcode (2 байта)
+        uint16_t opCode;
+        std::memcpy(&opCode, ptr, sizeof(uint16_t));
+        ptr += sizeof(uint16_t);
 
+        // Проверяем, что это действительно GET_NOTES
+        if (opCode != static_cast<uint16_t>(Protocol::Operation::GET_NOTES)) {
+            std::cout << "Wrong opcode for GET_NOTES: " << opCode
+                      << ", expected: " << static_cast<uint16_t>(Protocol::Operation::GET_NOTES)
+                      << std::endl;
+            return std::nullopt;
+        }
+
+        // 2. Читаем user_id (4 байта)
         GetNotesRequest req;
-        std::memcpy(&req.user_id, ptr, sizeof(req.user_id));
+        std::memcpy(&req.user_id, ptr, sizeof(uint32_t));
 
         return req;
     }
 
     std::optional<GetNotesResponse> decodeGetNotesResponse(const std::vector<uint8_t>& buffer) {
-        if (buffer.size() < 1 + sizeof(uint32_t)) {
-            return std::nullopt; // Недостаточно данных для заголовка
+        // Минимум: opcode(2) + notes_count(4) = 6 байт
+        if (buffer.size() < 6) {
+            std::cout << "Buffer too small for GET_NOTES_RESPONSE: "
+                      << buffer.size() << " bytes, need at least 6" << std::endl;
+            return std::nullopt;
         }
 
         GetNotesResponse response;
         size_t offset = 0;
 
-        // 1. Декодируем Operation
-        response.op = static_cast<Operation>(buffer[offset]);
-        offset += 1;
+        // 1. Декодируем Operation (2 байта)
+        uint16_t op_code;
+        std::memcpy(&op_code, buffer.data() + offset, sizeof(uint16_t));
+        offset += sizeof(uint16_t);
 
-        // 2. Декодируем количество записей
-        uint32_t notes_count;
-        if (offset + sizeof(notes_count) > buffer.size()) {
+        response.op = static_cast<Operation>(op_code);
+
+        // Проверяем, что это действительно GET_NOTES_RESPONSE
+        if (op_code != static_cast<uint16_t>(Operation::GET_NOTES)) {
+            std::cout << "Wrong opcode for GET_NOTES_RESPONSE: " << op_code
+                      << ", expected: " << static_cast<uint16_t>(Operation::GET_NOTES)
+                      << std::endl;
             return std::nullopt;
         }
-        std::memcpy(&notes_count, buffer.data() + offset, sizeof(notes_count));
-        offset += sizeof(notes_count);
+
+        // 2. Декодируем количество записей (4 байта)
+        uint32_t notes_count;
+        if (offset + sizeof(uint32_t) > buffer.size()) {
+            return std::nullopt;
+        }
+        std::memcpy(&notes_count, buffer.data() + offset, sizeof(uint32_t));
+        offset += sizeof(uint32_t);
+
+        std::cout << "Decoding GET_NOTES_RESPONSE:" << std::endl;
+        std::cout << "  Opcode: " << op_code << std::endl;
+        std::cout << "  Notes count: " << notes_count << std::endl;
 
         // 3. Декодируем каждую запись
         for (uint32_t i = 0; i < notes_count; ++i) {
-            // ID заметки
+            // ID заметки (4 байта)
             if (offset + sizeof(uint32_t) > buffer.size()) {
+                std::cout << "Not enough data for note id" << std::endl;
                 return std::nullopt;
             }
             uint32_t id;
-            std::memcpy(&id, buffer.data() + offset, sizeof(id));
-            offset += sizeof(id);
+            std::memcpy(&id, buffer.data() + offset, sizeof(uint32_t));
+            offset += sizeof(uint32_t);
 
-            // Version
+            // Version (4 байта)
             if (offset + sizeof(uint32_t) > buffer.size()) {
+                std::cout << "Not enough data for version" << std::endl;
                 return std::nullopt;
             }
             uint32_t version;
-            std::memcpy(&version, buffer.data() + offset, sizeof(version));
-            offset += sizeof(version);
+            std::memcpy(&version, buffer.data() + offset, sizeof(uint32_t));
+            offset += sizeof(uint32_t);
 
-            // Owner ID
+            // Is_shared как uint8_t (1 байт)
+            if (offset + sizeof(uint8_t) > buffer.size()) {
+                std::cout << "Not enough data for is_shared" << std::endl;
+                return std::nullopt;
+            }
+            uint8_t is_shared_byte;
+            std::memcpy(&is_shared_byte, buffer.data() + offset, sizeof(uint8_t));
+            offset += sizeof(uint8_t);
+            bool is_shared = (is_shared_byte != 0);
+
+            // Owner ID (4 байта)
             if (offset + sizeof(uint32_t) > buffer.size()) {
+                std::cout << "Not enough data for owner_id" << std::endl;
                 return std::nullopt;
             }
             uint32_t owner_id;
-            std::memcpy(&owner_id, buffer.data() + offset, sizeof(owner_id));
-            offset += sizeof(owner_id);
+            std::memcpy(&owner_id, buffer.data() + offset, sizeof(uint32_t));
+            offset += sizeof(uint32_t);
 
-            // Is shared
-            if (offset + sizeof(bool) > buffer.size()) {
-                return std::nullopt;
-            }
-            bool is_shared;
-            std::memcpy(&is_shared, buffer.data() + offset, sizeof(bool));
-            offset += sizeof(bool);
-
-            // Длина строки title
+            // Длина строки title (4 байта)
             if (offset + sizeof(uint32_t) > buffer.size()) {
+                std::cout << "Not enough data for title_len" << std::endl;
                 return std::nullopt;
             }
             uint32_t title_len;
-            std::memcpy(&title_len, buffer.data() + offset, sizeof(title_len));
-            offset += sizeof(title_len);
+            std::memcpy(&title_len, buffer.data() + offset, sizeof(uint32_t));
+            offset += sizeof(uint32_t);
 
             // Сама строка title
             if (offset + title_len > buffer.size()) {
+                std::cout << "Not enough data for title, need " << title_len
+                          << " bytes, have " << (buffer.size() - offset) << std::endl;
                 return std::nullopt;
             }
-            std::string title(
-                    reinterpret_cast<const char*>(buffer.data() + offset),
-                    title_len
-            );
+
+            std::string title;
+            if (title_len > 0) {
+                title.assign(reinterpret_cast<const char*>(buffer.data() + offset), title_len);
+            }
             offset += title_len;
 
-            // Сохраняем в map
+            // Сохраняем в map (ПОРЯДОК: title, is_shared, version, owner_id)
             response.notes[id] = std::make_tuple(title, is_shared, version, owner_id);
+
+            std::cout << "  Note #" << i << ": id=" << id
+                      << ", title='" << (title.empty() ? "" : title.substr(0, 20) + (title.size() > 20 ? "..." : ""))
+                      << "', shared=" << is_shared
+                      << ", version=" << version
+                      << ", owner=" << owner_id << std::endl;
         }
 
         // Проверяем, что декодировали все данные
         if (offset != buffer.size()) {
-            return std::nullopt; // Лишние данные или ошибка
+            std::cout << "Warning: extra data in buffer: decoded " << offset
+                      << " bytes, total " << buffer.size() << " bytes" << std::endl;
         }
 
         return response;
     }
+
+//    std::optional<GetNotesResponse> decodeGetNotesResponse(const std::vector<uint8_t>& buffer) {
+//        if (buffer.size() < 1 + sizeof(uint32_t)) {
+//            return std::nullopt; // Недостаточно данных для заголовка
+//        }
+//
+//        GetNotesResponse response;
+//        size_t offset = 0;
+//
+//        // 1. Декодируем Operation
+//        response.op = static_cast<Operation>(buffer[offset]);
+//        offset += 1;
+//
+//        // 2. Декодируем количество записей
+//        uint32_t notes_count;
+//        if (offset + sizeof(notes_count) > buffer.size()) {
+//            return std::nullopt;
+//        }
+//        std::memcpy(&notes_count, buffer.data() + offset, sizeof(notes_count));
+//        offset += sizeof(notes_count);
+//
+//        // 3. Декодируем каждую запись
+//        for (uint32_t i = 0; i < notes_count; ++i) {
+//            // ID заметки
+//            if (offset + sizeof(uint32_t) > buffer.size()) {
+//                return std::nullopt;
+//            }
+//            uint32_t id;
+//            std::memcpy(&id, buffer.data() + offset, sizeof(id));
+//            offset += sizeof(id);
+//
+//            // Version
+//            if (offset + sizeof(uint32_t) > buffer.size()) {
+//                return std::nullopt;
+//            }
+//            uint32_t version;
+//            std::memcpy(&version, buffer.data() + offset, sizeof(version));
+//            offset += sizeof(version);
+//
+//            // Owner ID
+//            if (offset + sizeof(uint32_t) > buffer.size()) {
+//                return std::nullopt;
+//            }
+//            uint32_t owner_id;
+//            std::memcpy(&owner_id, buffer.data() + offset, sizeof(owner_id));
+//            offset += sizeof(owner_id);
+//
+//            // Is shared
+//            if (offset + sizeof(bool) > buffer.size()) {
+//                return std::nullopt;
+//            }
+//            bool is_shared;
+//            std::memcpy(&is_shared, buffer.data() + offset, sizeof(bool));
+//            offset += sizeof(bool);
+//
+//            // Длина строки title
+//            if (offset + sizeof(uint32_t) > buffer.size()) {
+//                return std::nullopt;
+//            }
+//            uint32_t title_len;
+//            std::memcpy(&title_len, buffer.data() + offset, sizeof(title_len));
+//            offset += sizeof(title_len);
+//
+//            // Сама строка title
+//            if (offset + title_len > buffer.size()) {
+//                return std::nullopt;
+//            }
+//            std::string title(
+//                    reinterpret_cast<const char*>(buffer.data() + offset),
+//                    title_len
+//            );
+//            offset += title_len;
+//
+//            // Сохраняем в map
+//            response.notes[id] = std::make_tuple(title, is_shared, version, owner_id);
+//        }
+//
+//        // Проверяем, что декодировали все данные
+//        if (offset != buffer.size()) {
+//            return std::nullopt; // Лишние данные или ошибка
+//        }
+//
+//        return response;
+//    }
 
 
 
@@ -1242,7 +1442,34 @@ namespace Protocol {
 
 
     std::vector<uint8_t> encodeOwnerApproveMergeRequest(const OwnerApproveMergeRequest& req) {
-        return {};
+        const uint32_t text_size = static_cast<uint32_t>(req.approve_text.size());
+        std::vector<uint8_t> buffer(2 + 4 + 4 + 4 + text_size);
+
+        uint8_t* ptr = buffer.data();
+
+        // op
+        uint16_t op = static_cast<uint16_t>(Protocol::Operation::OWNER_APPROVE_MERGE);
+        std::memcpy(ptr, &op, sizeof(op));
+        ptr += sizeof(op);
+
+        // note_id
+        std::memcpy(ptr, &req.note_id, sizeof(req.note_id));
+        ptr += sizeof(req.note_id);
+
+        // merge_sender_id
+        std::memcpy(ptr, &req.merge_sender_id, sizeof(req.merge_sender_id));
+        ptr += sizeof(req.merge_sender_id);
+
+        // text_size
+        std::memcpy(ptr, &text_size, sizeof(text_size));
+        ptr += sizeof(text_size);
+
+        // approve_text
+        if (text_size > 0) {
+            std::memcpy(ptr, req.approve_text.data(), text_size);
+        }
+
+        return buffer;
     }
 
     std::vector<uint8_t> encodeOwnerApproveMergeResponse(const OwnerApproveMergeResponse& resp) {
@@ -1250,7 +1477,44 @@ namespace Protocol {
     }
 
     std::optional<OwnerApproveMergeRequest> decodeOwnerApproveMergeRequest(const std::vector<uint8_t>& buffer) {
-        return {};
+        OwnerApproveMergeRequest req{};
+
+        // Минимум: op(2) + note_id(4) + merge_sender_id(4) + text_size(4)
+        if (buffer.size() < 2 + 4 + 4 + 4)
+            return std::nullopt;
+
+        const uint8_t* ptr = buffer.data();
+        const uint8_t* end = ptr + buffer.size();
+
+        // op
+        uint16_t op = 0;
+        std::memcpy(&op, ptr, sizeof(op));
+        ptr += sizeof(op);
+
+        if (op != static_cast<uint16_t>(Protocol::Operation::OWNER_APPROVE_MERGE))
+            return std::nullopt;
+
+        // note_id
+        if (ptr + sizeof(req.note_id) > end) return std::nullopt;
+        std::memcpy(&req.note_id, ptr, sizeof(req.note_id));
+        ptr += sizeof(req.note_id);
+
+        // merge_sender_id
+        if (ptr + sizeof(req.merge_sender_id) > end) return std::nullopt;
+        std::memcpy(&req.merge_sender_id, ptr, sizeof(req.merge_sender_id));
+        ptr += sizeof(req.merge_sender_id);
+
+        // text_size
+        uint32_t text_size = 0;
+        if (ptr + sizeof(text_size) > end) return std::nullopt;
+        std::memcpy(&text_size, ptr, sizeof(text_size));
+        ptr += sizeof(text_size);
+
+        // approve_text bytes
+        if (ptr + text_size > end) return std::nullopt;
+        req.approve_text.assign(reinterpret_cast<const char*>(ptr), text_size);
+
+        return req;
     }
 
     std::optional<OwnerApproveMergeResponse> decodeOwnerApproveMergeResponse(const std::vector<uint8_t>& buffer) {

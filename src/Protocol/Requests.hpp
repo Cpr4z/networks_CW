@@ -66,7 +66,6 @@ namespace Protocol {
     struct OwnerApproveMergeRequest {
         uint32_t note_id;
         uint32_t merge_sender_id;
-//        uint8_t result_code;
         std::string approve_text;
     };
 

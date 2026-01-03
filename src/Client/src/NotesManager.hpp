@@ -22,8 +22,11 @@ public:
     Q_INVOKABLE void syncNote(int noteId);
     Q_INVOKABLE void ownerApprove(int noteId, const QString& merged_version);
     Q_INVOKABLE void serverApprove(int noteId);
-    Q_INVOKABLE void ownerApproveResult(int noteId, int merge_sender_id, int merge_result, const QString& merged_text);
+//    Q_INVOKABLE void ownerApproveResult(int noteId, int merge_sender_id, int merge_result, const QString& merged_text);
     Q_INVOKABLE void getNotes();
+    // approveMerge(noteId, text, version, merge_sender_id)
+    Q_INVOKABLE void approveMerge(int noteId, const QString& approved_merge, int version, int merge_sender_id);
+    Q_INVOKABLE void rejectMerge(int noteId, const QString& owner_version, int version, int merge_sender_id);
 
 private slots:
 
@@ -51,7 +54,7 @@ signals:
     void noteOpenError(int noteId, const QString& error);
     void noteUpdateConflict();
     void createSyncDialog(const QString& server_text);
-    void createOwnerApproveDialog(int note_id, int merge_sender_id, const QString& approve_version);
+    void createOwnerApproveDialog(int note_id, int merge_sender_id, const QString& approve_text);
     void afterTextUpdated(int version);
 //    void createAcceptMergeDialog(const QString& suggested_text);
     void serverVersionAccepted(int noteId, int version, const QString& server_version);

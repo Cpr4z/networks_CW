@@ -2,257 +2,123 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Layouts
+
 Dialog {
-    id: approveMergeDialog
+    id: dialog
     modal: true
     focus: true
-    width: 600
-    height: 500
-    title: "Подтверждение слияния изменений"
+    width: 650
+    height: 470
 
-    // 🔹 Входные данные
+    x: (parent ? (parent.width - width) / 2 : 100)
+    y: (parent ? (parent.height - height) / 2 : 100)
+
+
+    title: "Подтверждение изменений"
+
     property int noteId: -1
-    property string noteTitle: ""
-    property string mergedText: ""
-    property string originalText: ""
-    property string mergeAuthor: ""
+    // property string mergeAuthor: ""
+    property int mergeAuthor: -1
     property int mergeVersion: 0
 
-    signal acceptMerge(int noteId, string text, int version)
-    signal rejectMerge(int noteId)
-    signal requestChanges(int noteId, string feedback)
+    property string originalText: ""
+    property string mergedText: ""
+
+    signal acceptMerge(int noteId, string text, int version, int merge_sender_id)
+    signal rejectMerge(int noteId, string text, int version, int merge_sender_id)
+
+    function reposition() {
+        if (parent) {
+            x = Math.max(0, (parent.width - width) / 2)
+            y = Math.max(0, (parent.height - height) / 2)
+        }
+    }
+
+    onVisibleChanged: {
+        if (visible) {
+            reposition()
+        }
+    }
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 10
-        spacing: 8
+        anchors.margins: 12
+        spacing: 10
 
-        // --- Заголовок ---
-        Text {
-            text: "Запрос на объединение изменений"
-            font.pixelSize: 16
-            font.bold: true
-            Layout.alignment: Qt.AlignHCenter
-        }
-
-        Text {
-            text: "Заметка: " + noteTitle
-            font.pixelSize: 14
-            color: "#666"
-            Layout.alignment: Qt.AlignHCenter
-        }
-
-        Text {
-            text: "Автор слияния: " + mergeAuthor
-            font.pixelSize: 12
-            color: "#999"
-            Layout.alignment: Qt.AlignHCenter
-        }
-
-        // --- Панель с вкладками ---
-        TabBar {
-            id: tabBar
-            Layout.fillWidth: true
-
-            TabButton {
-                text: "Исходный текст"
-            }
-            TabButton {
-                text: "Предложенное слияние"
-            }
-            TabButton {
-                text: "Сравнение"
-            }
-        }
-
-        StackLayout {
-            id: stackLayout
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            currentIndex: tabBar.currentIndex
-
-            // Вкладка 1: Исходный текст
-            ScrollView {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-
-                TextArea {
-                    readOnly: true
-                    text: originalText
-                    wrapMode: TextEdit.Wrap
-                    font.pixelSize: 12
-                    background: Rectangle {
-                        color: "#f9f9f9"
-                        border.color: "#ddd"
-                        border.width: 1
-                        radius: 3
-                    }
-                }
-            }
-
-            // Вкладка 2: Предложенное слияние
-            ScrollView {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-
-                TextArea {
-                    id: mergedTextArea
-                    text: mergedText
-                    wrapMode: TextEdit.Wrap
-                    font.pixelSize: 12
-                    background: Rectangle {
-                        color: "#f0fff0"
-                        border.color: "#4CAF50"
-                        border.width: 2
-                        radius: 3
-                    }
-
-                    // Позволяем владельцу редактировать перед принятием
-                    onTextChanged: {
-                        approveMergeDialog.mergedText = text
-                    }
-                }
-            }
-
-            // Вкладка 3: Сравнение
-            ScrollView {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-
-                Flickable {
-                    contentWidth: width
-                    contentHeight: diffText.height
-
-                    Text {
-                        id: diffText
-                        width: parent.width
-                        text: generateDiff(originalText, mergedText)
-                        wrapMode: TextEdit.Wrap
-                        font.pixelSize: 12
-                        font.family: "monospace"
-
-                        // Подсветка изменений
-                        textFormat: Text.RichText
-                    }
-                }
-            }
-        }
-
-        // --- Комментарий владельца ---
-        ColumnLayout {
-            Layout.fillWidth: true
-            visible: requestChangesCheckBox.checked
-
-            Label {
-                text: "Комментарий к изменениям:"
-                font.pixelSize: 12
-            }
-
-            TextField {
-                id: feedbackField
-                Layout.fillWidth: true
-                placeholderText: "Опишите, что нужно изменить..."
-            }
-        }
-
-        // --- Опции ---
         RowLayout {
             Layout.fillWidth: true
 
-            CheckBox {
-                id: requestChangesCheckBox
-                text: "Запросить изменения"
-                font.pixelSize: 12
+            Label {
+                text: "От пользователя c id: " + mergeAuthor
+                color: "#666"
             }
 
             Item { Layout.fillWidth: true }
 
-            Text {
-                text: "Версия: v" + mergeVersion
-                font.pixelSize: 12
-                color: "gray"
+            Label {
+                text: "Версия: " + mergeVersion
+                color: "#666"
+                visible: mergeVersion !== 0
             }
         }
 
-        // --- Кнопки действий ---
+        Label {
+            Layout.fillWidth: true
+            text: "Ваш текущий текст (локально)"
+            font.bold: true
+        }
+
+        TextArea {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 150
+            readOnly: true
+            wrapMode: TextEdit.Wrap
+            text: dialog.originalText
+        }
+
+        Label {
+            Layout.fillWidth: true
+            text: "Предложенные изменения (можно отредактировать перед принятием)"
+            font.bold: true
+        }
+
+        TextArea {
+            id: proposedArea
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            wrapMode: TextEdit.Wrap
+            text: dialog.mergedText
+
+            onTextChanged: dialog.mergedText = text
+        }
+
         RowLayout {
             Layout.fillWidth: true
             spacing: 10
 
             Button {
                 text: "Отклонить"
-                flat: true
                 onClicked: {
-                    approveMergeDialog.rejectMerge(noteId)
-                    approveMergeDialog.close()
-                }
-                background: Rectangle {
-                    color: parent.down ? "#ffcccc" : "transparent"
-                    border.color: "#ff6666"
-                    border.width: 1
-                    radius: 3
+                    // function(noteId, text, version, merge_sender_id)
+                    dialog.rejectMerge(dialog.noteId, dialog.originalText, dialog.mergeVersion, dialog.mergeAuthor)
+                    dialog.close()
                 }
             }
 
             Item { Layout.fillWidth: true }
 
             Button {
-                text: "Запросить изменения"
-                visible: requestChangesCheckBox.checked
-                onClicked: {
-                    approveMergeDialog.requestChanges(noteId, feedbackField.text)
-                    approveMergeDialog.close()
-                }
-                background: Rectangle {
-                    color: parent.down ? "#ffe6cc" : "#ffcc99"
-                    radius: 3
-                }
-            }
-
-            Button {
                 text: "Принять"
                 highlighted: true
+                enabled: dialog.noteId !== -1
                 onClicked: {
-                    approveMergeDialog.acceptMerge(noteId, mergedText, mergeVersion)
-                    approveMergeDialog.close()
-                }
-                background: Rectangle {
-                    color: parent.down ? "#2E7D32" : "#4CAF50"
-                    radius: 3
+                    dialog.acceptMerge(dialog.noteId, dialog.mergedText, dialog.mergeVersion, dialog.mergeAuthor)
+                    dialog.close()
                 }
             }
         }
-    }
-
-    // Функция для генерации простого diff (упрощенная версия)
-    function generateDiff(original, merged) {
-        var result = ""
-        var originalLines = original.split('\n')
-        var mergedLines = merged.split('\n')
-
-        // Простой алгоритм сравнения строк
-        for (var i = 0; i < Math.max(originalLines.length, mergedLines.length); i++) {
-            var origLine = i < originalLines.length ? originalLines[i] : ""
-            var mergedLine = i < mergedLines.length ? mergedLines[i] : ""
-
-            if (origLine !== mergedLine) {
-                result += "<span style='color:red'>- " + escapeHtml(origLine) + "</span><br/>"
-                result += "<span style='color:green'>+ " + escapeHtml(mergedLine) + "</span><br/>"
-            } else {
-                result += "  " + escapeHtml(origLine) + "<br/>"
-            }
-        }
-
-        return result
-    }
-
-    function escapeHtml(text) {
-        return text
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;")
-            .replace(/ /g, "&nbsp;")
     }
 }

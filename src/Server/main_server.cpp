@@ -13,8 +13,11 @@ void signal_handler(int signal) {
 int main() {
     signal(SIGINT, signal_handler);
 
+#ifdef __APPLE__
     Server server(8080, "127.0.0.1");
-//    SyncServer server(8080, "0.0.0.0");
+#elif __linux__
+    Server server(8080, "0.0.0.0");
+#endif
 
     std::thread server_thread([&server]() {
         server.run();

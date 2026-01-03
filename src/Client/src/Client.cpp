@@ -19,21 +19,38 @@ namespace {
 
 NoteClient::NoteClient(QObject *parent) : QObject(parent) {
     connect(&m_socket, &QTcpSocket::readyRead, this, &NoteClient::onReadyRead);
-    m_socket.connectToHost("127.0.0.1", 8080); // данные сервера, на который мы отправляем запросы
-//    m_socket.connectToHost("192.168.64.4", 8080);
+#ifdef __APPLE__
+    m_socket.connectToHost("127.0.0.1", 8080);
+#elif __linux__
+    m_socket.connectToHost("192.168.64.4", 8080);
+#endif
 
 }
 
 void NoteClient::sendAuthRequest(const QString& login, const QString& password) {
+    std::cout << "Before sending auth request" << std::endl;
     Protocol::AuthRequest req = { login.toStdString(), password.toStdString() };
     std::vector<uint8_t> requestData = Protocol::encodeAuthRequest(req);
-    m_socket.write(reinterpret_cast<char*>(requestData.data()), requestData.size());
+    std::cout << "Size of auth request data: " << requestData.size() << std::endl;
+    qint64 bytesWritten = m_socket.write(
+            reinterpret_cast<const char*>(requestData.data()),
+            static_cast<qint64>(requestData.size())
+    );
+
+    std::cout << "Bytes written: " << bytesWritten << std::endl;
+    m_socket.flush();
 }
 
 void NoteClient::sendRegistrationRequest(const QString& login, const QString& password) {
     Protocol::RegistrationRequest req = { login.toStdString(), password.toStdString()};
     std::vector<uint8_t> requestData = Protocol::encodeRegistrationRequest(req);
-    m_socket.write(reinterpret_cast<char*>(requestData.data()), requestData.size());
+    qint64 bytesWritten = m_socket.write(
+            reinterpret_cast<const char*>(requestData.data()),
+            static_cast<qint64>(requestData.size())
+    );
+
+    std::cout << "Bytes written: " << bytesWritten << std::endl;
+    m_socket.flush();
 }
 
 void NoteClient::sendUpdateTextRequest(uint32_t note_id, const QString& text, uint32_t version) {
@@ -45,13 +62,26 @@ void NoteClient::sendUpdateTextRequest(uint32_t note_id, const QString& text, ui
     std::vector<uint8_t> requestData = Protocol::encodeUpdateTextRequest(req);
     const auto& request = Protocol::decodeUpdateTextRequest(requestData);
     std::cout << "Decoded data of update text request: " << request->text << std::endl;
-    m_socket.write(reinterpret_cast<char*>(requestData.data()), requestData.size());
+    qint64 bytesWritten = m_socket.write(
+            reinterpret_cast<const char*>(requestData.data()),
+            static_cast<qint64>(requestData.size())
+    );
+
+    std::cout << "Bytes written: " << bytesWritten << std::endl;
+    m_socket.flush();
 }
 
 void NoteClient::sendGetNotesRequest() {
+    std::cout << "Before sending get notes request" << std::endl;
     Protocol::GetNotesRequest req = { m_user_id };
     std::vector<uint8_t> requestData = Protocol::encodeGetNotesRequest(req);
-    m_socket.write(reinterpret_cast<char*>(requestData.data()), requestData.size());
+    qint64 bytesWritten = m_socket.write(
+            reinterpret_cast<const char*>(requestData.data()),
+            static_cast<qint64>(requestData.size())
+    );
+
+    std::cout << "Bytes written: " << bytesWritten << std::endl;
+    m_socket.flush();
 }
 
 void NoteClient::sendCreateNoteRequest(const QString& title) {
@@ -59,7 +89,13 @@ void NoteClient::sendCreateNoteRequest(const QString& title) {
     std::cout << "User who want to create note: " << m_user_id << std::endl;
     std::cout << "Note title: " << title.toStdString() << std::endl;
     std::vector<uint8_t> requestData = Protocol::encodeCreateNoteRequest(req);
-    m_socket.write(reinterpret_cast<char*>(requestData.data()), requestData.size());
+    qint64 bytesWritten = m_socket.write(
+            reinterpret_cast<const char*>(requestData.data()),
+            static_cast<qint64>(requestData.size())
+    );
+
+    std::cout << "Bytes written: " << bytesWritten << std::endl;
+    m_socket.flush();
 }
 
 void NoteClient::sendOpenNoteRequest(uint32_t note_id, uint32_t version) {
@@ -68,7 +104,13 @@ void NoteClient::sendOpenNoteRequest(uint32_t note_id, uint32_t version) {
     std::cout << "Note id: " << note_id << std::endl;
     std::cout << "Local version of note is: " << version << std::endl;
     std::vector<uint8_t> requestData = Protocol::encodeOpenNoteRequest(req);
-    m_socket.write(reinterpret_cast<char*>(requestData.data()), requestData.size());
+    qint64 bytesWritten = m_socket.write(
+            reinterpret_cast<const char*>(requestData.data()),
+            static_cast<qint64>(requestData.size())
+    );
+
+    std::cout << "Bytes written: " << bytesWritten << std::endl;
+    m_socket.flush();
 }
 
 void NoteClient::sendShareNoteRequest(uint32_t note_id, uint32_t version) {
@@ -76,14 +118,26 @@ void NoteClient::sendShareNoteRequest(uint32_t note_id, uint32_t version) {
     std::cout << "User with id - " << m_user_id << " want to share note with id - " << note_id << std::endl;
     std::cout << "Note version is: " << version << std::endl;
     std::vector<uint8_t> requestData = Protocol::encodeShareNoteRequest(req);
-    m_socket.write(reinterpret_cast<char*>(requestData.data()), requestData.size());
+    qint64 bytesWritten = m_socket.write(
+            reinterpret_cast<const char*>(requestData.data()),
+            static_cast<qint64>(requestData.size())
+    );
+
+    std::cout << "Bytes written: " << bytesWritten << std::endl;
+    m_socket.flush();
 }
 
 void NoteClient::sendSyncNoteRequest(uint32_t note_id) {
     Protocol::SyncNoteRequest req = {note_id, m_user_id};
     std::cout << "User with id " << m_user_id << " want to sync note with id " << note_id << std::endl;
     std::vector<uint8_t> requestData = Protocol::encodeSyncRequest(req);
-    m_socket.write(reinterpret_cast<char*>(requestData.data()), requestData.size());
+    qint64 bytesWritten = m_socket.write(
+            reinterpret_cast<const char*>(requestData.data()),
+            static_cast<qint64>(requestData.size())
+    );
+
+    std::cout << "Bytes written: " << bytesWritten << std::endl;
+    m_socket.flush();
 }
 
 void NoteClient::sendApproveMergeRequest(uint32_t noteId, uint8_t status, const QString& merged_version) {
@@ -93,18 +147,39 @@ void NoteClient::sendApproveMergeRequest(uint32_t noteId, uint8_t status, const 
     std::cout << "Want to accept server version of note with id: " << noteId << std::endl;
     std::cout << "Merged version is: " << merged_version.toStdString() << std::endl;
     std::vector<uint8_t> requestData = Protocol::encodeApproveMergeRequest(req);
-    m_socket.write(reinterpret_cast<char*>(requestData.data()), requestData.size());
+    qint64 bytesWritten = m_socket.write(
+            reinterpret_cast<const char*>(requestData.data()),
+            static_cast<qint64>(requestData.size())
+    );
+
+    std::cout << "Bytes written: " << bytesWritten << std::endl;
+    m_socket.flush();
 }
 
-void NoteClient::sendOwnerApproveMergeResponse(uint32_t noteId, uint32_t merge_sender_id, uint8_t result_code, const QString& approved_version) {
+void NoteClient::sendOwnerApproveMergeResponse(uint32_t noteId, uint32_t new_version, uint32_t merge_sender_id, uint8_t result_code, const QString& approved_version) {
     std::cout << "Send approve owner merge request" << std::endl;
 //    uint32_t note_id;
 //    uint32_t sender_id;
+//    uint32_t new_version;
 //    uint8_t status;
 //    std::string approved_text;
-    Protocol::OwnerApproveMergeResponse resp = {Protocol::Operation::OWNER_APPROVE_MERGE, noteId, merge_sender_id, result_code, approved_version.toStdString()};
+
+    std::cout << "Response data:" << std::endl;
+    std::cout << "Note id: " << noteId << std::endl;
+    std::cout << "Merge sender id is: " << merge_sender_id << std::endl;
+    std::cout << "Merge status is: " << static_cast<int>(result_code) << std::endl;
+    std::cout << "New version is: " << new_version << std::endl;
+    std::cout << "Merge text is: " << approved_version.toStdString() << std::endl;
+
+    Protocol::OwnerApproveMergeResponse resp = {Protocol::Operation::OWNER_APPROVE_MERGE, noteId, merge_sender_id, new_version, result_code, approved_version.toStdString()};
     std::vector<uint8_t> requestData = Protocol::encodeOwnerApproveMergeResponse(resp);
-    m_socket.write(reinterpret_cast<char*>(requestData.data()), requestData.size());
+    qint64 bytesWritten = m_socket.write(
+            reinterpret_cast<const char*>(requestData.data()),
+            static_cast<qint64>(requestData.size())
+    );
+
+    std::cout << "Bytes written: " << bytesWritten << std::endl;
+    m_socket.flush();
 }
 
 void NoteClient::handleAuthResponse(const std::vector<uint8_t>& buffer) {
@@ -116,9 +191,11 @@ void NoteClient::handleAuthResponse(const std::vector<uint8_t>& buffer) {
             std::cout << "User id is: " << response.user_id << std::endl;
             m_user_id = response.user_id;
             emit authSuccess(response.user_id);
+            return;
         } else {
             std::cout << "Auth response status is: " << static_cast<int>(response.status) << std::endl;
             emit authFailed(QString::fromStdString(mapAuthErrorCode(response.status)));
+            return;
         }
     } else {
         emit authFailed("Error while handling response from server");
@@ -241,7 +318,7 @@ void NoteClient::handleOwnerApproveMergeRequest(const std::vector<uint8_t>& buff
     if (request_opt.has_value()) {
         const auto& request = request_opt.value();
 
-        std::cout << "User with id: " << request.merge_sender_id << std::endl;
+        std::cout << "User with id: " << request.merge_sender_id;
         std::cout << ". Want to share note with id: " << request.note_id << std::endl;
         std::cout << "And this note has merged text version: " << request.approve_text << std::endl;
 
@@ -261,12 +338,12 @@ void NoteClient::handleApproveMergeResponse(const std::vector<uint8_t>& buffer) 
     }
 }
 
-void NoteClient::handleOwnerApproveMergeResponse(const std::vector<uint8_t>& buffer) {
-    const auto& response_opt = Protocol::decodeOwnerApproveMergeResponse(buffer);
-    if (response_opt.has_value()) {
-        const auto& response = response_opt.value();
-    }
-}
+//void NoteClient::handleOwnerApproveMergeResponse(const std::vector<uint8_t>& buffer) {
+//    const auto& response_opt = Protocol::decodeOwnerApproveMergeResponse(buffer);
+//    if (response_opt.has_value()) {
+//        const auto& response = response_opt.value();
+//    }
+//}
 
 void NoteClient::handleServerApproveMergeRequest(const std::vector<uint8_t>& buffer) {
     const auto& request_opt = Protocol::decodeServerApproveMergeRequest(buffer);
@@ -341,7 +418,8 @@ void NoteClient::onReadyRead() {
 
                 case Protocol::Operation::OWNER_APPROVE_MERGE:
                     std::cout << "Got owner approve merge response" << std::endl;
-                    handleOwnerApproveMergeResponse(buffer);
+                    handleOwnerApproveMergeRequest(buffer);
+//                    handleOwnerApproveMergeResponse(buffer);
                     break;
 
                 case Protocol::Operation::SERVER_APPROVE_MERGE:

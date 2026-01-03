@@ -12,13 +12,14 @@ ApplicationWindow {
     property bool showOnlyPersonal: false
     property bool showOnlyShared: false
     property int currentFilter: 0
+    property int userId: -1
 
     Component.onCompleted: {
         if (notesManager && userId > 0) {
-            console.log("Loading notes for user:", userId);
-            notesManager.getNotes(userId);
+            console.log("Loading notes for user:", window.userId);
+            notesManager.getNotes();
         } else {
-            console.warn("Cannot load notes: notesManager =", notesManager, ", userId =", userId);
+            console.warn("Cannot load notes: notesManager =", notesManager, ", userId =", window.userId);
         }
     }
 

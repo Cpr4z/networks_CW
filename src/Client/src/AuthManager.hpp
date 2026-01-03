@@ -31,7 +31,10 @@ private slots:
     std::cout << "Auth successed completed" << std::endl;
     emit loginSuccess(id);
 }
-    void onAuthFailed(const QString& err) { emit loginFailed(err); }
+    void onAuthFailed(const QString& err) {
+    std::cout << "Login Failed" << std::endl;
+    emit loginFailed(err);
+}
 
     void onRegistrationSuccess(uint32_t id) {
     std::cout << "Registration success" << std::endl;

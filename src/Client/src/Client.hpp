@@ -29,7 +29,7 @@ public:
     void sendApproveMergeRequest(uint32_t noteId, uint8_t status, const QString& merged_version);
 
 
-    void sendOwnerApproveMergeResponse(uint32_t noteId, uint32_t merge_sender_id, uint8_t result_code, const QString& approved_version);
+    void sendOwnerApproveMergeResponse(uint32_t noteId, uint32_t new_version, uint32_t merge_sender_id, uint8_t result_code, const QString& approved_version);
 
 
 signals:
@@ -76,7 +76,7 @@ private:
     void handleUpdateTextResponse(const std::vector<uint8_t>& buffer);
     void handleShareNoteResponse(const std::vector<uint8_t>& buffer);
     void handleApproveMergeResponse(const std::vector<uint8_t>& buffer);
-    void handleOwnerApproveMergeResponse(const std::vector<uint8_t>& buffer);
+//    void handleOwnerApproveMergeResponse(const std::vector<uint8_t>& buffer);
 
     void handleShareNoteNotifyRequest(const std::vector<uint8_t>& buffer);
     void handleOwnerApproveMergeRequest(const std::vector<uint8_t>& buffer);

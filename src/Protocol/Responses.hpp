@@ -72,6 +72,7 @@ namespace Protocol {
         Operation op;
         uint32_t note_id;
         uint32_t sender_id;
+        uint32_t new_version;
         uint8_t status;
         std::string approved_text;
     };

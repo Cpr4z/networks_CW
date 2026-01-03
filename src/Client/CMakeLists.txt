@@ -6,7 +6,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Quick Qml Network)
+find_package(Qt6 REQUIRED COMPONENTS Quick Qml Network QuickControls2)
 
 set(HEADERS
     src/Client.hpp)
@@ -33,6 +33,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         Qt6::Qml
         Qt6::Gui
         Qt6::Network
+        Qt6::QuickControls2
         protocol)
 
 target_include_directories(${PROJECT_NAME} PRIVATE

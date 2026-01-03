@@ -31,7 +31,7 @@ void Server::sendAuthResponse(int client_fd, const Protocol::AuthResponse& respo
     if (sent < 0) {
         perror("send");
     } else {
-        std::cout << "Sent response to client " << client_fd << std::endl;
+        std::cout << "Sent AUTH response to client " << client_fd << std::endl;
     }
 }
 
@@ -162,7 +162,6 @@ void Server::handleAuthRequest(int client_fd, const std::vector<uint8_t>& buffer
         response.user_id = 0;
         response.status = static_cast<uint8_t>(result.error());
     }
-
     sendAuthResponse(client_fd, response);
 }
 
@@ -307,6 +306,7 @@ void Server::handleApproveMergeRequest(int client_fd, const std::vector<uint8_t>
         Id note_owner_id = m_repository->getOwnerId(req->note_id);
         std::cout << "Note owner id is: " << note_owner_id << std::endl;
         int client_fd_owner = m_clients[static_cast<int>(note_owner_id)];
+        std::cout << "Note owner client_fd is: " << client_fd_owner << std::endl;
 
         // посылаем запрос владельцу заметки для того, чтобы он одобрил merge request
         Protocol::OwnerApproveMergeRequest request;
@@ -482,38 +482,52 @@ void Server::processClientMessages(int client_fd) {
         std::cout << "Received " << received << " bytes from client " << client_fd
                   << ", total buffer size: " << buffer.size() << std::endl;
 
-        size_t processed = 0;
-        std::cout << "Buffer size - processed: ";
-        std::cout << buffer.size() - processed << std::endl;
-        while (buffer.size() - processed >= 2) {
-            uint16_t opCode;
-            std::memcpy(&opCode, buffer.data() + processed, sizeof(uint16_t));
-            auto operation = static_cast<Protocol::Operation>(opCode);
-
-            size_t messageLength = getMessageLength(operation, buffer, processed);
-
-            if (messageLength == 0) {
-                std::cerr << "Invalid message length for operation "
-                          << static_cast<int>(operation) << std::endl;
-                return;
+        // Обрабатываем все полные сообщения в буфере
+        while (true) {
+            // Проверяем, что есть хотя бы 2 байта для opcode
+            if (buffer.size() < 2) {
+                break; // Ждем больше данных
             }
 
-            if (buffer.size() - processed < messageLength) {
+            uint16_t opCode;
+            std::memcpy(&opCode, buffer.data(), sizeof(uint16_t));
+            auto operation = static_cast<Protocol::Operation>(opCode);
+
+//            std::cout << "Opcode received: " << opCode
+//                      << " (" << operationToString(operation) << ")" << std::endl;
+
+            // Получаем длину сообщения
+            size_t messageLength = getMessageLength(operation, buffer, 0);
+
+            if (messageLength == 0) {
+                // Не можем определить длину - ждем больше данных
+                std::cout << "Cannot determine message length, waiting for more data"
+                          << std::endl;
                 break;
             }
 
-            std::vector<uint8_t> message(
-                    buffer.begin() + processed,
-                    buffer.begin() + processed + messageLength
-            );
+            // Проверяем, есть ли полное сообщение
+            if (buffer.size() < messageLength) {
+                std::cout << "Incomplete message: have " << buffer.size()
+                          << ", need " << messageLength << " bytes" << std::endl;
+                break; // Ждем остальные данные
+            }
 
-            std::cout << "Before processing message with operation code: " << opCode << std::endl;
+            // Извлекаем полное сообщение
+            std::vector<uint8_t> message(buffer.begin(),
+                                         buffer.begin() + messageLength);
+
+            std::cout << "Processing " << messageLength
+                      << " bytes for operation " << opCode << std::endl;
+
+            // Обрабатываем сообщение
             processClientMessage(client_fd, message);
-            processed += messageLength;
-        }
 
-        if (processed > 0) {
-            buffer.erase(buffer.begin(), buffer.begin() + processed);
+            // Удаляем обработанное сообщение из буфера
+            buffer.erase(buffer.begin(), buffer.begin() + messageLength);
+
+            std::cout << "Buffer after processing: " << buffer.size()
+                      << " bytes remaining" << std::endl;
         }
     }
 }
@@ -589,17 +603,48 @@ void Server::run() {
 void Server::stop() {
     m_running = false;
 
-    for (auto& thread : m_client_threads) {
-        if (thread.joinable()) {
-            thread.join();
-        }
-    }
-    m_client_threads.clear();
-
+    // 1) Разбудить accept()
     if (m_server_fd >= 0) {
+        shutdown(m_server_fd, SHUT_RDWR); // важно
         close(m_server_fd);
         m_server_fd = -1;
     }
 
+    // 2) Разбудить recv() у всех клиентов
+    {
+        std::lock_guard<std::mutex> lk(m_clients_mutex);
+        for (int fd : m_connected_clients) {
+            if (fd >= 0) {
+                shutdown(fd, SHUT_RDWR);
+                close(fd);
+            }
+        }
+        m_connected_clients.clear();
+    }
+
+    // 3) Теперь можно join()
+    for (auto& t : m_client_threads) {
+        if (t.joinable()) t.join();
+    }
+    m_client_threads.clear();
+
     std::cout << "Server stopped" << std::endl;
+
+
+
+//    m_running = false;
+//
+//    for (auto& thread : m_client_threads) {
+//        if (thread.joinable()) {
+//            thread.join();
+//        }
+//    }
+//    m_client_threads.clear();
+//
+//    if (m_server_fd >= 0) {
+//        close(m_server_fd);
+//        m_server_fd = -1;
+//    }
+//
+//    std::cout << "Server stopped" << std::endl;
 }

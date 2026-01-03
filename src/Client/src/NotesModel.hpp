@@ -41,7 +41,7 @@ public:
     void addPersonalNote(int id, const QString& title, int ownerId, int version);
     void addSharedNote(int id, const QString& title, int ownerId, int version);
     const NoteItem& noteAt(int row) const;
-//    void updateNoteVersion(uint32_t note_id, uint32_t version);
+    bool containsNote(int note_id);
 
 private:
     std::vector<NoteItem> m_notes;

@@ -87,8 +87,9 @@ void NotesManager::onCreateSyncDialog(const QString& server_text) {
     emit createSyncDialog(server_text);
 }
 
-void NotesManager::onCreateOwnerApproveDialog(uint32_t note_id, uint32_t merge_sender_id, const QString& approve_version) {
-    emit createOwnerApproveDialog(note_id, merge_sender_id, approve_version);
+void NotesManager::onCreateOwnerApproveDialog(uint32_t note_id, uint32_t merge_sender_id, const QString& approve_text) {
+    std::cout << "before creating owner approve dialog" << std::endl;
+    emit createOwnerApproveDialog(note_id, merge_sender_id, approve_text);
 }
 
 void NotesManager::onGetNotes(const QMap<uint32_t, std::tuple<QString, bool, uint32_t, uint32_t>>& notes) {
@@ -107,7 +108,6 @@ void NotesManager::onApproveServerVersion(uint32_t note_id, uint32_t version, co
     emit serverVersionAccepted(note_id, version, server_version);
 }
 
-// Вызывается, когда пользователь выбирает при конфликте
 void NotesManager::ownerApprove(int noteId, const QString& merged_version) {
     std::cout << "NotesManager::ownerApprove called" << std::endl;
     m_client->sendApproveMergeRequest(noteId, 0, merged_version);
@@ -118,10 +118,14 @@ void NotesManager::serverApprove(int noteId) {
     m_client->sendApproveMergeRequest(noteId, 1, "");
 }
 
-void NotesManager::ownerApproveResult(int noteId, int merge_sender_id, int merge_result, const QString& merged_text) {
-    m_client->sendOwnerApproveMergeResponse(noteId, merge_sender_id, static_cast<uint8_t>(merge_result), merged_text);
-}
-
 void NotesManager::getNotes() {
     m_client->sendGetNotesRequest();
+}
+
+void NotesManager::approveMerge(int noteId, const QString& approved_merge, int version, int merge_sender_id) {
+    m_client->sendOwnerApproveMergeResponse(noteId, version, merge_sender_id, 0, approved_merge);
+}
+
+void NotesManager::rejectMerge(int noteId, const QString& owner_version, int version, int merge_sender_id) {
+    m_client->sendOwnerApproveMergeResponse(noteId, version, merge_sender_id, 1, owner_version);
 }

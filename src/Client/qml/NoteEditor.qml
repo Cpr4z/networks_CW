@@ -20,11 +20,6 @@ ApplicationWindow {
 
     property bool hasUnsavedChanges: false
 
-    property Timer changeTimer: Timer {
-        interval: 300
-        onTriggered: checkForChanges()
-    }
-
     function checkForChanges() {
         hasUnsavedChanges = (titleField.text !== initialTitle || textArea.text !== initialText)
     }
@@ -66,13 +61,9 @@ ApplicationWindow {
                 maximumLength: 100
 
                 onTextChanged: {
-                    changeTimer.restart()
+                    checkForChanges()
+                    noteWindow.title = text ? text : "Без названия"
                 }
-
-                // onTextChanged: {
-                //     checkForChanges()
-                //     noteWindow.title = text ? text : "Без названия"
-                // }
             }
 
             ToolButton {
@@ -143,16 +134,7 @@ ApplicationWindow {
             selectByMouse: true
             persistentSelection: true
 
-            // property Timer changeTimer: Timer {
-            //     interval: 300
-            //     onTriggered: checkForChanges()
-            // }
-
-            onTextChanged: {
-                changeTimer.restart()
-            }
-
-            // onTextChanged: checkForChanges()
+            onTextChanged: checkForChanges()
         }
     }
 
@@ -208,7 +190,6 @@ ApplicationWindow {
         }
     }
 
-    // Диалог подтверждения удаления
     Dialog {
         id: deleteDialog
         title: "Удалить заметку"
@@ -259,13 +240,12 @@ ApplicationWindow {
             // hasUnsavedChanges = false
         }
 
-        onMergeManually: {
+        onMergeManually: function(noteId, editedContent) {
             // Пользователь выбрал ручное слияние
             conflictDetected = false
             localVersion++ // Увеличиваем версию
-            textArea.text = localContent // Текст после ручного редактирования
-            notesManager.ownerApprove(noteId, localContent);
-            // notesManager.forceUpdateNote(noteId, content, localVersion)
+            textArea.text = editedContent // Текст после ручного редактирования
+            notesManager.ownerApprove(noteId, editedContent);
             hasUnsavedChanges = false
         }
     }
@@ -274,10 +254,11 @@ ApplicationWindow {
         id: approveMergeDialog
         anchors.centerIn: parent
 
-        onAcceptMerge: function(noteId, text, version) {
+        onAcceptMerge: function(noteId, text, version, merge_sender_id) {
             // Владелец принял слияние
             console.log("Owner accepted merge for note:", noteId)
-            notesManager.approveMerge(noteId, text, version)
+            // NotesManager::approveMerge(int noteId, const QString& approved_merge, int version, int merge_sender_id)
+            notesManager.approveMerge(noteId, text, version, merge_sender_id)
 
             // Обновляем локальный текст и версию
             textArea.text = text
@@ -286,15 +267,24 @@ ApplicationWindow {
             hasUnsavedChanges = false
         }
 
-        onRejectMerge: function(noteId) {
+        onRejectMerge: function(noteId, text, version, merge_sender_id) {
             console.log("Owner rejected merge for note:", noteId)
-            notesManager.rejectMerge(noteId)
+            // NotesManager::rejectMerge(int noteId, const QString& owner_version, int version, int merge_sender_id)
+            notesManager.rejectMerge(noteId, text, version, merge_sender_id)
         }
+    }
 
-        onRequestChanges: function(noteId, feedback) {
-            console.log("Owner requested changes for note:", noteId, "Feedback:", feedback)
-            notesManager.requestMergeChanges(noteId, feedback)
-        }
+    function createOwnerApproveDialog(noteId, merge_sender_id, approve_text) {
+        // Заполняем диалог данными
+        approveMergeDialog.noteId = noteId
+        approveMergeDialog.noteTitle = titleField.text
+        approveMergeDialog.mergeAuthor = merge_sender_id
+        approveMergeDialog.mergedText = approve_text
+        approveMergeDialog.originalText = textArea.text
+
+        approveMergeDialog.mergeVersion = serverVersion || 0
+
+        approveMergeDialog.open()
     }
 
     Popup {
@@ -370,39 +360,73 @@ ApplicationWindow {
             conflictDialog.close()
         }
 
-        function onCreateOwnerApproveDialog(noteId, merge_sender_id, approve_text) {
-
+        function createOwnerApproveDialog(noteId, merge_sender_id, approve_text) {
+            if (noteId !== noteWindow.noteId)
+                return
+            createOwnerApproveDialog(noteId, merge_sender_id, approve_text)
         }
 
-        // function onCreateAcceptMergeDialog(suggested_text) {
-        //
-        // }
+        function onCreateOwnerApproveDialog(noteId, merge_sender_id, approve_text) {
+            var component = Qt.createComponent("ApproveMergeDialog.qml")
+
+
+            if (component.status === Component.Ready) {
+                // 2. Создаем экземпляр диалога
+                var dialog = component.createObject(noteWindow, {
+                    noteId: noteId,
+                    mergeAuthor: merge_sender_id,
+                    // mergeAuthor: "Пользователь #" + merge_sender_id,
+                    mergeVersion: localVersion + 1, // Следующая версия
+                    mergedText: approve_text,
+                    originalText: textArea ? textArea.text : "",
+                    // noteTitle: titleField ? titleField.text : "Без названия"
+                })
+
+                if (dialog === null) {
+                    console.error("Ошибка создания диалога:", component.errorString())
+                    return
+                }
+
+                // 3. Подключаем сигналы диалога
+                // (int noteId, const QString& approved_merge, int version, int merge_sender_id)
+                dialog.acceptMerge.connect(function(dialogNoteId, text, version, merge_sender_id) {
+                    console.log("Accept merge for note:", dialogNoteId, "version:", version)
+
+                    // Вызываем метод notesManager
+                    notesManager.approveMerge(dialogNoteId, text, version, merge_sender_id)
+
+                    // Обновляем локальный текст
+                    if (textArea) {
+                        textArea.text = text
+                    }
+                    localVersion = version
+                    hasUnsavedChanges = false
+
+                    // Закрываем диалог
+                    dialog.close()
+                    dialog.destroy()
+                })
+
+                // (int noteId, const QString& approved_merge, int version, int merge_sender_id)
+                dialog.rejectMerge.connect(function(dialogNoteId, text, version, merge_sender_id) {
+                    console.log("Reject merge for note:", dialogNoteId)
+
+                    // Вызываем метод notesManager
+                    notesManager.rejectMerge(dialogNoteId, text, version, merge_sender_id)
+
+                    // Закрываем диалог
+                    dialog.close()
+                    dialog.destroy()
+                })
+
+                // 4. Показываем диалог
+                dialog.open()
+
+            } else if (component.status === Component.Error) {
+                console.error("Ошибка загрузки компонента диалога:", component.errorString())
+            }
+        }
     }
-
-    // Connections {
-        // target: notesManager
-
-        // Когда приходит обновление от сервера
-        // onServerVersionChanged: function(noteId, content, version, sender) {
-        //     if (noteId !== noteWindow.noteId) return
-        //
-        //     serverVersion = version
-        //
-        //     if (!conflictDetected) {
-        //         if (localVersion < serverVersion && hasUnsavedChanges) {
-        //             // Активный конфликт - показываем диалог
-        //             conflictDialog.localContent = textArea.text
-        //             conflictDialog.serverContent = content
-        //             conflictDialog.serverVersion = version
-        //             conflictDialog.open()
-        //         } else if (localVersion < serverVersion) {
-        //             // Просто обновляем, если нет локальных изменений
-        //             textArea.text = content
-        //             localVersion = serverVersion
-        //         }
-        //     }
-        // }
-    // }
 
     Shortcut {
         sequences: [StandardKey.Save, "Ctrl+S"]

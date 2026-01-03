@@ -47,6 +47,10 @@ QHash<int, QByteArray> NotesModel::roleNames() const {
 }
 
 void NotesModel::addPersonalNote(int id, const QString& title, int ownerId, int version) {
+    if (containsNote(id)) {
+        std::cout << "Personal note with id: " << id << " is already exists" << std::endl;
+        return;
+    }
     const int row = m_notes.size();
     beginInsertRows(QModelIndex(), row, row);
     m_notes.push_back({ id, title, false, ownerId, version });
@@ -54,6 +58,10 @@ void NotesModel::addPersonalNote(int id, const QString& title, int ownerId, int 
 }
 
 void NotesModel::addSharedNote(int id, const QString& title, int ownerId, int version) {
+    if (containsNote(id)) {
+        std::cout << "Shared note with id: " << id << " is already exists" << std::endl;
+        return;
+    }
     const int row = m_notes.size();
     beginInsertRows(QModelIndex(), row, row);
     m_notes.push_back({ id, title, true, ownerId, version });
@@ -81,6 +89,13 @@ bool NotesModel::isNoteShared(int noteId) const {
         }
     }
     return false;
+}
+
+bool NotesModel::containsNote(int note_id) {
+    const auto note = std::ranges::find_if(m_notes, [&](const auto& item){
+        return item.noteId;
+    });
+    return note != m_notes.end();
 }
 
 //void NotesModel::updateNoteVersion(uint32_t note_id, uint32_t version) {
