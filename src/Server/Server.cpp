@@ -1,97 +1,107 @@
 #include "Server.hpp"
+
 #include <fcntl.h>
 #include <cstring>
 #include <iostream>
 
+static bool sendAll(int fd, const uint8_t* data, size_t size) {
+    while (size > 0) {
+        ssize_t s = ::send(fd, data, size, 0);
+        if (s <= 0) return false;
+        data += (size_t)s;
+        size -= (size_t)s;
+    }
+    return true;
+}
+
 Server::Server(int port, const std::string& host)
         : m_port(port), m_host(host) {
     m_repository = std::make_shared<Repository>();
+    m_encryptionKey = "shared-secret-key-123";
 }
 
 Server::~Server() {
     stop();
 }
 
+void Server::setEncryptionKey(const std::string& key) {
+    m_encryptionKey = key;
+}
+
+std::vector<uint8_t> Server::decryptClientData(int client_fd, const std::vector<uint8_t>& raw) {
+    std::lock_guard<std::mutex> lock(m_clientDataMutex);
+    auto it = m_clientData.find(client_fd);
+    if (it == m_clientData.end() || !it->second.encryptor || raw.empty()) return raw;
+    return it->second.encryptor->decrypt(raw);
+}
+
+std::vector<uint8_t> Server::encryptDataForClient(int client_fd, const std::vector<uint8_t>& plain) {
+    std::lock_guard<std::mutex> lock(m_clientDataMutex);
+    auto it = m_clientData.find(client_fd);
+    if (it == m_clientData.end() || !it->second.encryptor || plain.empty()) return plain;
+    return it->second.encryptor->encrypt(plain);
+}
+
+void Server::sendEncrypted(int client_fd, const std::vector<uint8_t>& plain) {
+    auto payload = encryptDataForClient(client_fd, plain); // payload = ciphertext (пока)
+    uint32_t len = htonl((uint32_t)payload.size());
+    if (!sendAll(client_fd, reinterpret_cast<uint8_t*>(&len), sizeof(len))) {
+        perror("send len");
+        return;
+    }
+    if (!payload.empty() && !sendAll(client_fd, payload.data(), payload.size())) {
+        perror("send payload");
+        return;
+    }
+}
+
+void Server::cleanupClientData(int client_fd) {
+    std::lock_guard<std::mutex> lock(m_clientDataMutex);
+    m_clientData.erase(client_fd);
+}
+
 void Server::broadcastToAllClients(int client_fd_, const std::vector<uint8_t>& data) {
     std::lock_guard<std::mutex> lock(m_clients_mutex);
     for (int client_fd : m_connected_clients) {
         if (client_fd != client_fd_) {
-            ssize_t sent = send(client_fd, data.data(), data.size(), 0);
-            if (sent < 0) {
-                perror("broadcast send");
-            }
+            sendEncrypted(client_fd, data);
         }
     }
 }
 
 void Server::sendAuthResponse(int client_fd, const Protocol::AuthResponse& response) {
     std::vector<uint8_t> response_buffer = Protocol::encodeAuthResponse(response);
-    ssize_t sent = send(client_fd, response_buffer.data(), response_buffer.size(), 0);
-    if (sent < 0) {
-        perror("send");
-    } else {
-        std::cout << "Sent AUTH response to client " << client_fd << std::endl;
-    }
+    sendEncrypted(client_fd, response_buffer);
 }
 
 void Server::sendRegistrationResponse(int client_fd, const Protocol::RegistrationResponse& response) {
     std::vector<uint8_t> response_buffer = Protocol::encodeRegistrationResponse(response);
-    ssize_t sent = send(client_fd, response_buffer.data(), response_buffer.size(), 0);
-    if (sent < 0) {
-        perror("send");
-    } else {
-        std::cout << "Sent response to client " << client_fd << std::endl;
-    }
+    sendEncrypted(client_fd, response_buffer);
 }
 
 void Server::sendGetNotesResponse(int client_fd, const Protocol::GetNotesResponse& response) {
     std::vector<uint8_t> response_buffer = Protocol::encodeGetNotesResponse(response);
-    ssize_t sent = send(client_fd, response_buffer.data(), response_buffer.size(), 0);
-    if (sent < 0) {
-        perror("send");
-    } else {
-        std::cout << "Sent response to client " << client_fd << std::endl;
-    }
+    sendEncrypted(client_fd, response_buffer);
 }
 
 void Server::sendSyncResponse(int client_fd, const Protocol::SyncNoteResponse& response) {
     std::vector<uint8_t> response_buffer = Protocol::encodeSyncResponse(response);
-    ssize_t sent = send(client_fd, response_buffer.data(), response_buffer.size(), 0);
-    if (sent < 0) {
-        perror("send");
-    } else {
-        std::cout << "Sent response to client " << client_fd << std::endl;
-    }
+    sendEncrypted(client_fd, response_buffer);
 }
 
 void Server::sendCreateNoteResponse(int client_fd, const Protocol::CreateNoteResponse& response) {
     std::vector<uint8_t> response_buffer = Protocol::encodeCreateNoteResponse(response);
-    ssize_t sent = send(client_fd, response_buffer.data(), response_buffer.size(), 0);
-    if (sent < 0) {
-        perror("send");
-    } else {
-        std::cout << "Sent response to client " << client_fd << std::endl;
-    }
+    sendEncrypted(client_fd, response_buffer);
 }
 
 void Server::sendOpenNoteResponse(int client_fd, const Protocol::OpenNoteResponse& response) {
     std::vector<uint8_t> response_buffer = Protocol::encodeOpenNoteResponse(response);
-    ssize_t sent = send(client_fd, response_buffer.data(), response_buffer.size(), 0);
-    if (sent < 0) {
-        perror("send");
-    } else {
-        std::cout << "Sent response to client " << client_fd << std::endl;
-    }
+    sendEncrypted(client_fd, response_buffer);
 }
 
 void Server::sendUpdateTextResponse(int client_fd, const Protocol::UpdateTextResponse& response) {
     std::vector<uint8_t> response_buffer = Protocol::encodeUpdateTextResponse(response);
-    ssize_t sent = send(client_fd, response_buffer.data(), response_buffer.size(), 0);
-    if (sent < 0) {
-        perror("send");
-    } else {
-        std::cout << "Sent response to client " << client_fd << std::endl;
-    }
+    sendEncrypted(client_fd, response_buffer);
 }
 
 void Server::sendShareNoteNotifyRequest(int client_fd, const Protocol::ShareNoteNotifyRequest& request) {
@@ -101,32 +111,17 @@ void Server::sendShareNoteNotifyRequest(int client_fd, const Protocol::ShareNote
 
 void Server::sendOwnerApproveMergeRequest(int client_fd, const Protocol::OwnerApproveMergeRequest& request) {
     std::vector<uint8_t> request_buffer = Protocol::encodeOwnerApproveMergeRequest(request);
-    ssize_t sent = send(client_fd, request_buffer.data(), request_buffer.size(), 0);
-    if (sent < 0) {
-        perror("send");
-    } else {
-        std::cout << "Sent response to client " << client_fd << std::endl;
-    }
+    sendEncrypted(client_fd, request_buffer);
 }
 
 void Server::sendServerApproveMergeRequest(int client_fd, const Protocol::ServerApproveMergeRequest& request) {
     std::vector<uint8_t> request_buffer = Protocol::encodeServerApproveMergeRequest(request);
-    ssize_t sent = send(client_fd, request_buffer.data(), request_buffer.size(), 0);
-    if (sent < 0) {
-        perror("send");
-    } else {
-        std::cout << "Sent response to client " << client_fd << std::endl;
-    }
+    sendEncrypted(client_fd, request_buffer);
 }
 
 void Server::sendUpdateTextMergedRequest(int client_fd, const Protocol::UpdateTextMergedRequest& request) {
     std::vector<uint8_t> request_buffer = Protocol::encodeUpdateTextMergedRequest(request);
-    ssize_t sent = send(client_fd, request_buffer.data(), request_buffer.size(), 0);
-    if (sent < 0) {
-        perror("send");
-    } else {
-        std::cout << "Sent response to client " << client_fd << std::endl;
-    }
+    sendEncrypted(client_fd, request_buffer);
 }
 
 void Server::handleAuthRequest(int client_fd, const std::vector<uint8_t>& buffer) {
@@ -411,44 +406,46 @@ void Server::processClientMessage(int client_fd, const std::vector<uint8_t>& mes
 }
 
 void Server::processClientMessages(int client_fd) {
-    std::vector<uint8_t> buffer;
-    char temp_buffer[4096];
-    while (true) {
-        ssize_t received = recv(client_fd, temp_buffer, sizeof(temp_buffer), 0);
+    uint8_t tmp[4096];
 
-        if (received <= 0) {
-            if (received == 0) {
-                std::cout << "Client " << client_fd << " disconnected" << std::endl;
-            } else {
-                perror("recv");
-            }
-            return;
+    while (true) {
+        ssize_t received = recv(client_fd, tmp, sizeof(tmp), 0);
+        if (received <= 0) return;
+        {
+            std::lock_guard<std::mutex> lk(m_clientDataMutex);
+            m_clientData[client_fd].buffer.insert(
+                    m_clientData[client_fd].buffer.end(),
+                    tmp, tmp + received
+            );
         }
 
-        buffer.insert(buffer.end(), temp_buffer, temp_buffer + received);
-
         while (true) {
-            if (buffer.size() < 2) {
-                break;
+            std::vector<uint8_t> payload;
+
+            {
+                std::lock_guard<std::mutex> lk(m_clientDataMutex);
+                auto &buf = m_clientData[client_fd].buffer;
+
+                if (buf.size() < 4) break;
+
+                uint32_t len_be;
+                std::memcpy(&len_be, buf.data(), 4);
+                uint32_t len = ntohl(len_be);
+                if (len == 0 || len > 10 * 1024 * 1024) {
+                    std::cerr << "Bad frame length: " << len << std::endl;
+                    buf.clear();
+                    break;
+                }
+
+                if (buf.size() < 4 + len) break;
+
+                payload.assign(buf.begin() + 4, buf.begin() + 4 + len);
+                buf.erase(buf.begin(), buf.begin() + 4 + len);
             }
+            auto plain = decryptClientData(client_fd, payload);
+            if (plain.size() < 2) continue;
 
-            uint16_t opCode;
-            std::memcpy(&opCode, buffer.data(), sizeof(uint16_t));
-            auto operation = static_cast<Protocol::Operation>(opCode);
-            size_t messageLength = getMessageLength(operation, buffer, 0);
-            if (messageLength == 0) {
-                break;
-            }
-
-            if (buffer.size() < messageLength) {
-                break;
-            }
-
-            std::vector<uint8_t> message(buffer.begin(),
-                                         buffer.begin() + messageLength);
-
-            processClientMessage(client_fd, message);
-            buffer.erase(buffer.begin(), buffer.begin() + messageLength);
+            processClientMessage(client_fd, plain);
         }
     }
 }
@@ -459,13 +456,25 @@ void Server::handleClient(int client_fd) {
         m_connected_clients.insert(client_fd);
     }
 
+    {
+        std::lock_guard<std::mutex> lock(m_clientDataMutex);
+        auto& cd = m_clientData[client_fd];
+        cd.encryptor = std::make_unique<Encryptor>(m_encryptionKey);
+    }
+
     try {
         processClientMessages(client_fd);
     } catch (const std::exception& e) {
         std::cerr << "Error handling client " << client_fd << ": " << e.what() << std::endl;
     }
 
+    cleanupClientData(client_fd);
     close(client_fd);
+
+    {
+        std::lock_guard<std::mutex> lock(m_clients_mutex);
+        m_connected_clients.erase(client_fd);
+    }
 }
 
 void Server::run() {

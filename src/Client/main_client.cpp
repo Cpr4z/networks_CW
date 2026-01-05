@@ -15,6 +15,7 @@ int main(int argc, char** argv) {
     QQmlApplicationEngine engine;
 
     ClientPtr client = std::make_unique<NoteClient>();
+    client->setEncryptionKey("shared-secret-key-123");
 
     AuthManager auth(client.get());
     NotesManager notesManager(client.get());

@@ -10,6 +10,7 @@
 #include <unordered_set>
 
 #include <Protocol.hpp>
+#include <Encryptor.hpp>
 
 #include "Repository.hpp"
 
@@ -21,6 +22,17 @@ private:
     std::atomic<bool> m_running{false};
     std::vector<std::thread> m_client_threads;
 
+    std::string m_encryptionKey;
+
+    struct ClientData {
+        std::vector<uint8_t> buffer;
+        std::unique_ptr<Encryptor> encryptor;
+        uint32_t userId = 0;
+    };
+    std::unordered_map<int, ClientData> m_clientData;
+    std::mutex m_clientDataMutex;
+
+
     void handleClient(int client_fd);
     void processClientMessages(int client_fd);
     void processClientMessage(int client_fd,
@@ -28,6 +40,11 @@ private:
     size_t getMessageLength(Protocol::Operation op,
     const std::vector<uint8_t>& buffer,
             size_t offset);
+
+    std::vector<uint8_t> decryptClientData(int client_fd, const std::vector<uint8_t>& rawData);
+    std::vector<uint8_t> encryptDataForClient(int client_fd, const std::vector<uint8_t>& plainData);
+    void sendEncrypted(int client_fd, const std::vector<uint8_t>& data);
+    void cleanupClientData(int client_fd);
 
 private:
 
@@ -66,6 +83,8 @@ public:
 
     void run();
     void stop();
+
+    void setEncryptionKey(const std::string& key);
 
 private:
     std::mutex m_clients_mutex;

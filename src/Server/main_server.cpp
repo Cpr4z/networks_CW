@@ -18,6 +18,8 @@ int main() {
     Server server(8080, "0.0.0.0");
 #endif
 
+    server.setEncryptionKey("shared-secret-key-123");
+
     std::thread server_thread([&server]() {
         server.run();
     });

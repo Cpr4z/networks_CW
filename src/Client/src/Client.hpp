@@ -8,11 +8,14 @@
 
 #include <Protocol.hpp>
 #include <Note.hpp>
+#include <Encryptor.hpp>
 
 class NoteClient : public QObject {
     Q_OBJECT
 public:
     NoteClient(QObject* parent = nullptr);
+
+    void setEncryptionKey(const QString& password);
 
     void sendAuthRequest(const QString& login, const QString& password);
     void sendRegistrationRequest(const QString& login, const QString& password);
@@ -70,16 +73,23 @@ private:
     void handleCreateNoteResponse(const std::vector<uint8_t>& buffer);
     void handleOpenNoteResponse(const std::vector<uint8_t>& buffer);
     void handleUpdateTextResponse(const std::vector<uint8_t>& buffer);
-    void handleShareNoteResponse(const std::vector<uint8_t>& buffer);
 
     void handleShareNoteNotifyRequest(const std::vector<uint8_t>& buffer);
     void handleOwnerApproveMergeRequest(const std::vector<uint8_t>& buffer);
     void handleServerApproveMergeRequest(const std::vector<uint8_t>& buffer);
     void handleUpdateTextMergedRequest(const std::vector<uint8_t>& buffer);
 
+    std::vector<uint8_t> encryptData(const std::vector<uint8_t>& data);
+    std::vector<uint8_t> decryptData(const std::vector<uint8_t>& data);
+
+    void sendEncryptedData(const std::vector<uint8_t>& data);
+
 private:
     uint32_t m_user_id = 0;
     QTcpSocket m_socket;
+    std::vector<uint8_t> m_inBuffer;
+    std::unique_ptr<Encryptor> m_encryptor;
+    bool m_encryptionEnabled = false;
 };
 
 using ClientPtr = std::unique_ptr<NoteClient>;

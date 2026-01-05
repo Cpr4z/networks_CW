@@ -5,7 +5,13 @@ add_library(protocol STATIC
         Note.cpp
         User.cpp
         Protocol.cpp
+        Encryptor.cpp
 )
+
+find_package(OpenSSL REQUIRED)
+
+target_include_directories(protocol PRIVATE ${OPENSSL_INCLUDE_DIR})
+target_link_libraries(protocol PRIVATE ${OPENSSL_LIBRARIES})
 
 target_compile_features(protocol PUBLIC cxx_std_23)
 

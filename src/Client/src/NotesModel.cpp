@@ -84,7 +84,7 @@ bool NotesModel::isNoteShared(int noteId) const {
 
 bool NotesModel::containsNote(int note_id) {
     const auto note = std::ranges::find_if(m_notes, [&](const auto& item){
-        return item.noteId;
+        return item.noteId == note_id;
     });
     return note != m_notes.end();
 }

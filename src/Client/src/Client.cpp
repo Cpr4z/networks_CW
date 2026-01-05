@@ -23,105 +23,109 @@ NoteClient::NoteClient(QObject *parent) : QObject(parent) {
 
 }
 
+void NoteClient::setEncryptionKey(const QString& password) {
+    if (!password.isEmpty()) {
+        m_encryptor = std::make_unique<Encryptor>(password.toStdString());
+        m_encryptionEnabled = true;
+    }
+}
+
+std::vector<uint8_t> NoteClient::encryptData(const std::vector<uint8_t>& data) {
+    if (!m_encryptionEnabled || !m_encryptor) {
+        return data;
+    }
+
+    try {
+        return m_encryptor->encrypt(data);
+    } catch (const std::exception& e) {
+        qWarning() << "Encryption failed:" << e.what();
+        return data;
+    }
+}
+
+std::vector<uint8_t> NoteClient::decryptData(const std::vector<uint8_t>& data) {
+    if (!m_encryptionEnabled || !m_encryptor || data.empty()) {
+        return data;
+    }
+
+    try {
+        return m_encryptor->decrypt(data);
+    } catch (const std::exception& e) {
+        qWarning() << "Decryption failed:" << e.what();
+        return data;
+    }
+}
+
+void NoteClient::sendEncryptedData(const std::vector<uint8_t>& plain) {
+    auto payload = encryptData(plain);
+    uint32_t len = htonl((uint32_t)payload.size());
+
+    m_socket.write(reinterpret_cast<const char*>(&len), 4);
+    if (!payload.empty()) {
+        m_socket.write(reinterpret_cast<const char*>(payload.data()),
+                       (qint64)payload.size());
+    }
+    m_socket.flush();
+}
+
 void NoteClient::sendAuthRequest(const QString& login, const QString& password) {
     Protocol::AuthRequest req = { login.toStdString(), password.toStdString() };
     std::vector<uint8_t> requestData = Protocol::encodeAuthRequest(req);
-    qint64 bytesWritten = m_socket.write(
-            reinterpret_cast<const char*>(requestData.data()),
-            static_cast<qint64>(requestData.size())
-    );
-    m_socket.flush();
+    sendEncryptedData(requestData);
 }
 
 void NoteClient::sendRegistrationRequest(const QString& login, const QString& password) {
     Protocol::RegistrationRequest req = { login.toStdString(), password.toStdString()};
     std::vector<uint8_t> requestData = Protocol::encodeRegistrationRequest(req);
-    qint64 bytesWritten = m_socket.write(
-            reinterpret_cast<const char*>(requestData.data()),
-            static_cast<qint64>(requestData.size())
-    );
-    m_socket.flush();
+    sendEncryptedData(requestData);
 }
 
 void NoteClient::sendUpdateTextRequest(uint32_t note_id, const QString& text, uint32_t version) {
     Protocol::UpdateTextRequest req = { m_user_id, note_id, version, text.toStdString()};
     std::vector<uint8_t> requestData = Protocol::encodeUpdateTextRequest(req);
-    const auto& request = Protocol::decodeUpdateTextRequest(requestData);
-    qint64 bytesWritten = m_socket.write(
-            reinterpret_cast<const char*>(requestData.data()),
-            static_cast<qint64>(requestData.size())
-    );
-    m_socket.flush();
+    sendEncryptedData(requestData);
 }
 
 void NoteClient::sendGetNotesRequest() {
     Protocol::GetNotesRequest req = { m_user_id };
     std::vector<uint8_t> requestData = Protocol::encodeGetNotesRequest(req);
-    qint64 bytesWritten = m_socket.write(
-            reinterpret_cast<const char*>(requestData.data()),
-            static_cast<qint64>(requestData.size())
-    );
-    m_socket.flush();
+    sendEncryptedData(requestData);
 }
 
 void NoteClient::sendCreateNoteRequest(const QString& title) {
     Protocol::CreateNoteRequest req = { m_user_id, title.toStdString() };
     std::vector<uint8_t> requestData = Protocol::encodeCreateNoteRequest(req);
-    qint64 bytesWritten = m_socket.write(
-            reinterpret_cast<const char*>(requestData.data()),
-            static_cast<qint64>(requestData.size())
-    );
-    m_socket.flush();
+    sendEncryptedData(requestData);
 }
 
 void NoteClient::sendOpenNoteRequest(uint32_t note_id, uint32_t version) {
     Protocol::OpenNoteRequest req = {note_id, m_user_id, version};
     std::vector<uint8_t> requestData = Protocol::encodeOpenNoteRequest(req);
-    qint64 bytesWritten = m_socket.write(
-            reinterpret_cast<const char*>(requestData.data()),
-            static_cast<qint64>(requestData.size())
-    );
-    m_socket.flush();
+    sendEncryptedData(requestData);
 }
 
 void NoteClient::sendShareNoteRequest(uint32_t note_id, uint32_t version) {
     Protocol::ShareNoteRequest req = {m_user_id, note_id, version};
     std::vector<uint8_t> requestData = Protocol::encodeShareNoteRequest(req);
-    qint64 bytesWritten = m_socket.write(
-            reinterpret_cast<const char*>(requestData.data()),
-            static_cast<qint64>(requestData.size())
-    );
-    m_socket.flush();
+    sendEncryptedData(requestData);
 }
 
 void NoteClient::sendSyncNoteRequest(uint32_t note_id) {
     Protocol::SyncNoteRequest req = {note_id, m_user_id};
     std::vector<uint8_t> requestData = Protocol::encodeSyncRequest(req);
-    qint64 bytesWritten = m_socket.write(
-            reinterpret_cast<const char*>(requestData.data()),
-            static_cast<qint64>(requestData.size())
-    );
-    m_socket.flush();
+    sendEncryptedData(requestData);
 }
 
 void NoteClient::sendApproveMergeRequest(uint32_t noteId, uint8_t status, const QString& merged_version) {
     Protocol::ApproveMergeRequest req = { noteId, m_user_id, status, merged_version.toStdString() };
     std::vector<uint8_t> requestData = Protocol::encodeApproveMergeRequest(req);
-    qint64 bytesWritten = m_socket.write(
-            reinterpret_cast<const char*>(requestData.data()),
-            static_cast<qint64>(requestData.size())
-    );
-    m_socket.flush();
+    sendEncryptedData(requestData);
 }
 
 void NoteClient::sendOwnerApproveMergeResponse(uint32_t noteId, uint32_t new_version, uint32_t merge_sender_id, uint8_t result_code, const QString& approved_version) {
     Protocol::OwnerApproveMergeResponse resp = {Protocol::Operation::OWNER_APPROVE_MERGE, noteId, merge_sender_id, new_version, result_code, approved_version.toStdString()};
     std::vector<uint8_t> requestData = Protocol::encodeOwnerApproveMergeResponse(resp);
-    qint64 bytesWritten = m_socket.write(
-            reinterpret_cast<const char*>(requestData.data()),
-            static_cast<qint64>(requestData.size())
-    );
-    m_socket.flush();
+    sendEncryptedData(requestData);
 }
 
 void NoteClient::handleAuthResponse(const std::vector<uint8_t>& buffer) {
@@ -212,10 +216,6 @@ void NoteClient::handleUpdateTextResponse(const std::vector<uint8_t>& buffer) {
     }
 }
 
-void NoteClient::handleShareNoteResponse(const std::vector<uint8_t>& buffer) {
-
-}
-
 void NoteClient::handleShareNoteNotifyRequest(const std::vector<uint8_t>& buffer) {
     const auto& request_opt = Protocol::decodeShareNoteNotifyRequest(buffer);
     if (request_opt.has_value()) {
@@ -249,62 +249,43 @@ void NoteClient::handleUpdateTextMergedRequest(const std::vector<uint8_t>& buffe
 }
 
 void NoteClient::onReadyRead() {
-    while (m_socket.bytesAvailable() > 0) {
-        QByteArray data = m_socket.readAll();
-        std::vector<uint8_t> buffer(data.begin(), data.end());
-        if (buffer.size() >= 2) {
-            Protocol::Operation op = Protocol::decodeOperation(buffer);
-            switch (op) {
-                case Protocol::Operation::AUTH:
-                    handleAuthResponse(buffer);
-                    break;
+    QByteArray chunk = m_socket.readAll();
+    m_inBuffer.insert(m_inBuffer.end(), chunk.begin(), chunk.end());
 
-                case Protocol::Operation::REGISTRATION:
-                    handleRegistrationResponse(buffer);
-                    break;
+    while (true) {
+        if (m_inBuffer.size() < 4) return;
 
-                case Protocol::Operation::SYNC:
-                    handleSyncResponse(buffer);
-                    break;
+        uint32_t len_be;
+        std::memcpy(&len_be, m_inBuffer.data(), 4);
+        uint32_t len = ntohl(len_be);
 
-                case Protocol::Operation::GET_NOTES:
-                    handleGetNotesResponse(buffer);
-                    break;
+        if (len == 0 || len > 10 * 1024 * 1024) {
+            m_inBuffer.clear();
+            return;
+        }
 
-                case Protocol::Operation::CREATE_NOTE:
-                    handleCreateNoteResponse(buffer);
-                    break;
+        if (m_inBuffer.size() < 4 + len) return;
 
-                case Protocol::Operation::OPEN_NOTE:
-                    handleOpenNoteResponse(buffer);
-                    break;
+        std::vector<uint8_t> payload(m_inBuffer.begin() + 4, m_inBuffer.begin() + 4 + len);
+        m_inBuffer.erase(m_inBuffer.begin(), m_inBuffer.begin() + 4 + len);
 
-                case Protocol::Operation::UPDATE_TEXT:
-                    handleUpdateTextResponse(buffer);
-                    break;
+        auto decrypted = decryptData(payload);
+        if (decrypted.size() < 2) continue;
 
-                case Protocol::Operation::SHARE_NOTE:
-                    handleShareNoteResponse(buffer);
-                    break;
-
-                case Protocol::Operation::SHARE_NOTE_NOTIFY:
-                    handleShareNoteNotifyRequest(buffer);
-                    break;
-
-                case Protocol::Operation::OWNER_APPROVE_MERGE:
-                    handleOwnerApproveMergeRequest(buffer);
-                    break;
-
-                case Protocol::Operation::SERVER_APPROVE_MERGE:
-                    handleServerApproveMergeRequest(buffer);
-                    break;
-
-                case Protocol::Operation::UPDATE_TEXT_MERGED:
-                    handleUpdateTextMergedRequest(buffer);
-                    break;
-                default:
-                    break;
-            }
+        Protocol::Operation op = Protocol::decodeOperation(decrypted);
+        switch (op) {
+            case Protocol::Operation::AUTH: handleAuthResponse(decrypted); break;
+            case Protocol::Operation::REGISTRATION: handleRegistrationResponse(decrypted); break;
+            case Protocol::Operation::SYNC: handleSyncResponse(decrypted); break;
+            case Protocol::Operation::GET_NOTES: handleGetNotesResponse(decrypted); break;
+            case Protocol::Operation::CREATE_NOTE: handleCreateNoteResponse(decrypted); break;
+            case Protocol::Operation::OPEN_NOTE: handleOpenNoteResponse(decrypted); break;
+            case Protocol::Operation::UPDATE_TEXT: handleUpdateTextResponse(decrypted); break;
+            case Protocol::Operation::SHARE_NOTE_NOTIFY: handleShareNoteNotifyRequest(decrypted); break;
+            case Protocol::Operation::OWNER_APPROVE_MERGE: handleOwnerApproveMergeRequest(decrypted); break;
+            case Protocol::Operation::SERVER_APPROVE_MERGE: handleServerApproveMergeRequest(decrypted); break;
+            case Protocol::Operation::UPDATE_TEXT_MERGED: handleUpdateTextMergedRequest(decrypted); break;
+            default: break;
         }
     }
 }
