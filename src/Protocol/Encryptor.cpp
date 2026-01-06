@@ -1,7 +1,5 @@
 #include "Encryptor.hpp"
 
-#include <vector>
-
 Encryptor::Encryptor(const std::string &password) {
     unsigned char key[32] = {0};
     unsigned char iv[16] = {0};

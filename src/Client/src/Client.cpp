@@ -1,5 +1,7 @@
 #include "Client.hpp"
 
+#include <arpa/inet.h>
+
 namespace {
     std::string mapAuthErrorCode(int code) {
         switch(code) {
