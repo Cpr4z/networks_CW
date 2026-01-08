@@ -19,7 +19,7 @@ public:
     Q_INVOKABLE void openNote(int noteId, int version);
     Q_INVOKABLE void updateNote(int noteId, const QString& text, int version);
     Q_INVOKABLE void shareNoteWithEveryone(int noteId, int version);
-    Q_INVOKABLE void syncNote(int noteId);
+    Q_INVOKABLE void syncNote(int noteId, const QString& base_version, const QString& local_version);
     Q_INVOKABLE void ownerApprove(int noteId, const QString& merged_version);
     Q_INVOKABLE void serverApprove(int noteId);
     Q_INVOKABLE void getNotes();
@@ -39,6 +39,7 @@ private slots:
     void onGetNotes(const QMap<uint32_t, std::tuple<QString, bool, uint32_t, uint32_t>>& notes);
     void onApproveServerVersion(uint32_t note_id, uint32_t version, const QString& server_version);
     void onUpdateTextMerged(uint32_t note_id, uint32_t version, const QString& merged_version);
+    void onAutoMergedText(uint32_t note_id, uint32_t version, const QString& auto_merged_version);
 
 signals:
     void noteOpened(int note_id, int version, const QString& text);
@@ -49,6 +50,7 @@ signals:
     void afterTextUpdated(int version);
     void serverVersionAccepted(int noteId, int version, const QString& server_version);
     void updateTextMerged(int noteId, int version, const QString& merged_version);
+    void autoMergedText(int noteId, int version, const QString& auto_merged_version);
 
 private:
     NotesModel* m_model;

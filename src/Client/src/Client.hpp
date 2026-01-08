@@ -24,7 +24,7 @@ public:
     void sendOpenNoteRequest(uint32_t note_id, uint32_t version);
     void sendUpdateTextRequest(uint32_t note_id, const QString& text, uint32_t version);
     void sendShareNoteRequest(uint32_t note_id, uint32_t version);
-    void sendSyncNoteRequest(uint32_t note_id);
+    void sendSyncNoteRequest(uint32_t note_id, const QString& base_version, const QString& local_version);
     void sendApproveMergeRequest(uint32_t noteId, uint8_t status, const QString& merged_version);
 
     void sendOwnerApproveMergeResponse(uint32_t noteId, uint32_t new_version, uint32_t merge_sender_id, uint8_t result_code, const QString& approved_version);
@@ -61,6 +61,8 @@ signals:
     void approveServerVersion(uint32_t note_id, uint32_t version, const QString& server_version);
 
     void updateTextMerged(uint32_t note_id, uint32_t version, const QString& merged_version);
+
+    void autoMergedText(uint32_t note_id, uint32_t version, const QString& auto_merged_version);
 
 private slots:
     void onReadyRead();

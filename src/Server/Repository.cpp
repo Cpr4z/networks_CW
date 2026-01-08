@@ -337,3 +337,31 @@ void Repository::updateNoteAfterMerge(uint32_t note_id, uint32_t version, const 
         }
     }
 }
+
+uint32_t Repository::afterAutoMerged(uint32_t note_id, const std::string& auto_merged_text) {
+    uint32_t owner_id = getOwnerId(note_id);
+    const auto user = std::ranges::find_if(m_notes_map, [&](const auto& item){
+        // using NotesMap = Map<UserPtr, Notes>;
+        return item.first->getId() == owner_id;
+    });
+
+    const auto note = std::ranges::find_if(user->second, [&](const auto& item){
+        return item->getId() == note_id;
+    });
+
+    (*note)->setText(auto_merged_text);
+    (*note)->incrementVersion();
+    uint32_t owner_version = (*note)->getVersion();
+
+    for (const auto& [note_user, notes] : m_notes_map) {
+        if (note_user->getId() != owner_id) {
+            for (const auto& note_ : notes) {
+                if (note_->getId() == note_id) {
+                    note_->setVersion(owner_version);
+                    note_->setText(auto_merged_text);
+                }
+            }
+        }
+    }
+    return owner_version;
+}

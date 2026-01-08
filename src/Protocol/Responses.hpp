@@ -32,6 +32,8 @@ namespace Protocol {
 
     struct SyncNoteResponse {
         Operation op;
+        uint8_t status; // 0 - merged without conflict, 1 need resolve conflict
+        uint32_t note_id;
         uint32_t version;
         std::string text;
     };

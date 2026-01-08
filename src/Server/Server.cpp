@@ -4,6 +4,8 @@
 #include <cstring>
 #include <iostream>
 
+#include <ConflictResolver.hpp>
+
 static bool sendAll(int fd, const uint8_t* data, size_t size) {
     while (size > 0) {
         ssize_t s = ::send(fd, data, size, 0);
@@ -165,12 +167,54 @@ void Server::handleGetNotesRequest(int client_fd, const std::vector<uint8_t>& bu
 
 void Server::handleSyncRequest(int client_fd, const std::vector<uint8_t>& buffer) {
     const auto& request = Protocol::decodeSyncRequest(buffer);
-    const auto& [_, text, version] = m_repository->getNoteInfoToSync(request->note_id, request->user_id);
+    const auto& [_, server_text, version] = m_repository->getNoteInfoToSync(request->note_id, request->user_id);
     Protocol::SyncNoteResponse response;
     response.op = Protocol::Operation::SYNC;
-    response.text = text;
-    response.version = version;
-    sendSyncResponse(client_fd, response);
+    const auto conflictType = Protocol::ConflictResolver::detectConflictType(
+            request->base_version,
+            server_text,
+            request->local_version
+    );
+
+    if (conflictType == Protocol::ConflictResolver::ConflictType::Manual) {
+        response.text = server_text;
+        response.version = version;
+        sendSyncResponse(client_fd, response);
+        return;
+    }
+
+    auto autoMergedText = Protocol::ConflictResolver::autoMergeIfNoConflict(
+            request->base_version,
+            server_text,
+            request->local_version,
+            true
+    );
+
+    if (!autoMergedText.has_value()) {
+
+        response.text = server_text;
+        response.version = version;
+        response.status = 1;
+        sendSyncResponse(client_fd, response);
+        return;
+    }
+
+    response.text = autoMergedText.value();
+    response.status = 0;
+
+    response.version = m_repository->afterAutoMerged(request->note_id, response.text);
+
+    const auto& user_to_send = m_repository->getNoteUsers(request->note_id);
+    std::vector<int> fd_clients;
+    fd_clients.reserve(user_to_send.size());
+
+    for (const uint32_t client : user_to_send) {
+        fd_clients.emplace_back(m_clients[static_cast<int>(client)]);
+    }
+
+    for (const int fd_client : fd_clients) {
+        sendSyncResponse(fd_client, response);
+    }
 }
 
 void Server::handleCreateNoteRequest(int client_fd, const std::vector<uint8_t>& buffer) {
@@ -315,7 +359,9 @@ size_t Server::getMessageLength(Protocol::Operation op,
             return 2 + 4;
         }
         case Protocol::Operation::SYNC: {
-            return 2 + 4 + 4;
+            uint32_t textLen;
+            std::memcpy(&textLen, buffer.data() + offset + 2 + 4 + 4, sizeof(textLen));
+            return 2 + 4 + 4 + 4 + textLen;
         }
         case Protocol::Operation::CREATE_NOTE: {
             uint16_t titleLen;

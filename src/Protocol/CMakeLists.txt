@@ -6,6 +6,7 @@ add_library(protocol STATIC
         User.cpp
         Protocol.cpp
         Encryptor.cpp
+        ConflictResolver.cpp
 )
 
 find_package(OpenSSL REQUIRED)

@@ -27,6 +27,8 @@ namespace Protocol {
     struct SyncNoteRequest {
         uint32_t note_id;
         uint32_t user_id;
+        std::string base_version;
+        std::string local_version;
     };
 
     struct OpenNoteRequest {

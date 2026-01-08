@@ -13,6 +13,7 @@ ApplicationWindow {
     property int noteId: -1
     property string initialTitle: ""
     property string initialText: ""
+    property string serverVersionText: ""
     property bool isNoteShared: false
     property int localVersion: 0
     property int serverVersion: 0
@@ -317,7 +318,7 @@ ApplicationWindow {
         target: notesManager
 
         function onNoteUpdateConflict() {
-            notesManager.syncNote(noteId);
+            notesManager.syncNote(noteId, noteWindow.serverVersionText, textArea.text);
         }
 
         function onCreateSyncDialog(server_text) {
@@ -328,6 +329,8 @@ ApplicationWindow {
 
         function onAfterTextUpdated(version) {
             noteWindow.localVersion = version;
+            noteWindow.serverVersionText = textArea.text;
+            // noteWindow.serverVersion = version;
         }
 
         function onServerVersionAccepted(noteId, version, server_text) {
@@ -336,6 +339,7 @@ ApplicationWindow {
 
             textArea.text = server_text
             noteWindow.initialText = server_text
+            noteWindow.serverVersionText = server_text
             noteWindow.localVersion = version
             noteWindow.serverVersion = version
             noteWindow.hasUnsavedChanges = false
@@ -350,6 +354,19 @@ ApplicationWindow {
 
             textArea.text = merged_version
             noteWindow.initialText = merged_version
+            noteWindow.serverVersionText = merged_version
+            noteWindow.localVersion = version
+            noteWindow.serverVersion = version
+            noteWindow.hasUnsavedChanges = false
+            noteWindow.conflictDetected = false
+        }
+
+        function onAutoMergedText(noteId, version, auto_merged_text) {
+            if (noteId !== noteWindow.noteId)
+                return
+
+            textArea.text = auto_merged_text
+            noteWindow.initialText = auto_merged_text
             noteWindow.localVersion = version
             noteWindow.serverVersion = version
             noteWindow.hasUnsavedChanges = false

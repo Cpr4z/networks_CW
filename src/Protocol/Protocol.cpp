@@ -234,11 +234,15 @@ namespace Protocol {
         return response;
     }
 
-
     std::vector<uint8_t> encodeSyncRequest(const SyncNoteRequest& req) {
-        std::vector<uint8_t> buffer(2 + 4 + 4);
-        auto op = static_cast<uint16_t>(Operation::SYNC);
+        const uint32_t base_text_size = static_cast<uint32_t>(req.base_version.size());
+        const uint32_t text_size = static_cast<uint32_t>(req.local_version.size());
+
+        std::vector<uint8_t> buffer(2 + 4 + 4 + 4 + 4 + base_text_size + text_size);
+
         uint8_t* ptr = buffer.data();
+
+        const uint16_t op = static_cast<uint16_t>(Operation::SYNC);
         std::memcpy(ptr, &op, sizeof(op));
         ptr += sizeof(op);
 
@@ -246,17 +250,40 @@ namespace Protocol {
         ptr += sizeof(req.note_id);
 
         std::memcpy(ptr, &req.user_id, sizeof(req.user_id));
+        ptr += sizeof(req.user_id);
+
+        std::memcpy(ptr, &base_text_size, sizeof(base_text_size));
+        ptr += sizeof(base_text_size);
+
+        std::memcpy(ptr, &text_size, sizeof(text_size));
+        ptr += sizeof(text_size);
+
+        if (base_text_size > 0) {
+            std::memcpy(ptr, req.base_version.data(), base_text_size);
+            ptr += base_text_size;
+        }
+
+        if (text_size > 0) {
+            std::memcpy(ptr, req.local_version.data(), text_size);
+        }
+
         return buffer;
     }
 
     std::vector<uint8_t> encodeSyncResponse(const SyncNoteResponse& resp) {
         const auto textSize = static_cast<uint32_t>(resp.text.size());
-        std::vector<uint8_t> buffer(2 + 4 + 4 + textSize);
+        std::vector<uint8_t> buffer(2 + 1 + 4 + 4 + 4 + textSize);
         uint8_t* ptr = buffer.data();
 
         const auto op = static_cast<uint16_t>(resp.op);
         std::memcpy(ptr, &op, sizeof(op));
         ptr += sizeof(op);
+
+        std::memcpy(ptr, &resp.status, sizeof(resp.status));
+        ptr += sizeof(resp.status);
+
+        std::memcpy(ptr, &resp.note_id, sizeof(resp.note_id));
+        ptr += sizeof(resp.note_id);
 
         std::memcpy(ptr, &resp.version, sizeof(resp.version));
         ptr += sizeof(resp.version);
@@ -264,14 +291,21 @@ namespace Protocol {
         std::memcpy(ptr, &textSize, sizeof(textSize));
         ptr += sizeof(textSize);
 
-        std::memcpy(ptr, resp.text.data(), textSize);
+        if (textSize > 0) {
+            std::memcpy(ptr, resp.text.data(), textSize);
+        }
 
         return buffer;
     }
 
     std::optional<SyncNoteRequest> decodeSyncRequest(const std::vector<uint8_t>& buffer) {
+        if (buffer.size() < (2 + 4 + 4 + 4 + 4))
+            return std::nullopt;
+
         SyncNoteRequest request;
         const uint8_t* ptr = buffer.data();
+        const uint8_t* end = buffer.data() + buffer.size();
+
         uint16_t op;
         std::memcpy(&op, ptr, sizeof(op));
         ptr += sizeof(op);
@@ -280,15 +314,39 @@ namespace Protocol {
         ptr += sizeof(request.note_id);
 
         std::memcpy(&request.user_id, ptr, sizeof(request.user_id));
+        ptr += sizeof(request.user_id);
+
+        uint32_t base_text_size;
+        std::memcpy(&base_text_size, ptr, sizeof(base_text_size));
+        ptr += sizeof(base_text_size);
+
+        uint32_t text_size;
+        std::memcpy(&text_size, ptr, sizeof(text_size));
+        ptr += sizeof(text_size);
+
+        request.base_version.assign(reinterpret_cast<const char*>(ptr), base_text_size);
+        ptr += base_text_size;
+
+        request.local_version.assign(reinterpret_cast<const char*>(ptr), text_size);
 
         return request;
     }
 
     std::optional<SyncNoteResponse> decodeSyncResponse(const std::vector<uint8_t>& buffer) {
+
         SyncNoteResponse response;
         const uint8_t* ptr = buffer.data();
-        std:memcpy(&response.op, ptr, sizeof(response.op));
-        ptr += sizeof(response.op);
+
+        uint16_t op_raw;
+        std::memcpy(&op_raw, ptr, sizeof(op_raw));
+        response.op = static_cast<Operation>(op_raw);
+        ptr += sizeof(op_raw);
+
+        std::memcpy(&response.status, ptr, sizeof(response.status));
+        ptr += sizeof(response.status);
+
+        std::memcpy(&response.note_id, ptr, sizeof(response.note_id));
+        ptr += sizeof(response.note_id);
 
         std::memcpy(&response.version, ptr, sizeof(response.version));
         ptr += sizeof(response.version);
@@ -298,6 +356,7 @@ namespace Protocol {
         ptr += sizeof(textLen);
 
         response.text.assign(reinterpret_cast<const char*>(ptr), textLen);
+
         return response;
     }
 

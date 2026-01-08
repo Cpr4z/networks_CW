@@ -112,8 +112,8 @@ void NoteClient::sendShareNoteRequest(uint32_t note_id, uint32_t version) {
     sendEncryptedData(requestData);
 }
 
-void NoteClient::sendSyncNoteRequest(uint32_t note_id) {
-    Protocol::SyncNoteRequest req = {note_id, m_user_id};
+void NoteClient::sendSyncNoteRequest(uint32_t note_id, const QString& base_version, const QString& local_version) {
+    Protocol::SyncNoteRequest req = {note_id, m_user_id, base_version.toStdString(), local_version.toStdString()};
     std::vector<uint8_t> requestData = Protocol::encodeSyncRequest(req);
     sendEncryptedData(requestData);
 }
@@ -165,7 +165,11 @@ void NoteClient::handleSyncResponse(const std::vector<uint8_t>& buffer) {
     const auto& response_opt = Protocol::decodeSyncResponse(buffer);
     if (response_opt.has_value()) {
         const auto& response = response_opt.value();
-        emit createSyncDialog(QString::fromStdString(response.text));
+        if (response.status == 0) {
+            emit autoMergedText(response.note_id, response.version, QString::fromStdString(response.text));
+        } else {
+            emit createSyncDialog(QString::fromStdString(response.text));
+        }
     }
 }
 

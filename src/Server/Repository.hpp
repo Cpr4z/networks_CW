@@ -50,6 +50,8 @@ public:
 
     void updateNoteAfterMerge(uint32_t note_id, uint32_t version, const std::string& merged_text);
 
+    uint32_t afterAutoMerged(uint32_t note_id, const std::string& auto_merged_text);
+
 private:
     int m_users_count = 0;
     int m_notes_count = 0;

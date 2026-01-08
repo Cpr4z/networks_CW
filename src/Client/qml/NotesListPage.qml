@@ -363,6 +363,7 @@ ApplicationWindow {
                     noteId: noteId,
                     initialTitle: title,
                     initialText: text,
+                    serverVersionText: text,
                     isNoteShared: isShared,
                     localVersion: version
                 })

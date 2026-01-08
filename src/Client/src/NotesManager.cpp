@@ -1,7 +1,5 @@
 #include "NotesManager.hpp"
 
-//#include <iostream>
-
 NotesManager::NotesManager(NoteClient* client, QObject* parent)
         : QObject(parent),
           m_model(new NotesModel(this)),
@@ -19,6 +17,7 @@ NotesManager::NotesManager(NoteClient* client, QObject* parent)
     connect(m_client, &NoteClient::getNotes, this, &NotesManager::onGetNotes);
     connect(m_client, &NoteClient::approveServerVersion, this, &NotesManager::onApproveServerVersion);
     connect(m_client, &NoteClient::updateTextMerged, this, &NotesManager::onUpdateTextMerged);
+    connect(m_client, &NoteClient::autoMergedText, this, &NotesManager::onAutoMergedText);
 }
 
 QAbstractListModel* NotesManager::model() const {
@@ -33,8 +32,8 @@ void NotesManager::createNote(const QString& title) {
     m_client->sendCreateNoteRequest(title);
 }
 
-void NotesManager::syncNote(int noteId) {
-    m_client->sendSyncNoteRequest(noteId);
+void NotesManager::syncNote(int noteId, const QString& base_version, const QString& local_version) {
+    m_client->sendSyncNoteRequest(noteId, base_version, local_version);
 }
 
 void NotesManager::onNoteCreationSuccess(const QString& title, uint32_t noteId, uint32_t ownerId, uint32_t version) {
@@ -106,6 +105,10 @@ void NotesManager::onApproveServerVersion(uint32_t note_id, uint32_t version, co
 
 void NotesManager::onUpdateTextMerged(uint32_t note_id, uint32_t version, const QString& merged_version) {
     emit updateTextMerged(note_id, version, merged_version);
+}
+
+void NotesManager::onAutoMergedText(uint32_t note_id, uint32_t version, const QString& auto_merged_version) {
+    emit autoMergedText(note_id, version, auto_merged_version);
 }
 
 void NotesManager::ownerApprove(int noteId, const QString& merged_version) {
